@@ -71,7 +71,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           }}
         />
       </FadeIn>
-      <Comments />
+      <Comments postSlug={slug} />
     </article>
   );
 }

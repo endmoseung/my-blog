@@ -1,11 +1,10 @@
-"use client";
-import Giscus from "@giscus/react";
-import { useTheme } from "next-themes";
+import { isCommentsEnabled } from "@/lib/supabase";
+import { getComments } from "@/lib/comments";
+import CommentSection from "./comments/CommentSection";
 
-export default function Comments() {
-  const { theme } = useTheme();
-  const repo = process.env.NEXT_PUBLIC_GISCUS_REPO;
-  if (!repo) {
+// 서버 컴포넌트: 댓글을 불러와 클라이언트 UI로 넘긴다.
+export default async function Comments({ postSlug }: { postSlug: string }) {
+  if (!isCommentsEnabled) {
     return (
       <div
         style={{
@@ -16,25 +15,14 @@ export default function Comments() {
           fontSize: ".9rem",
         }}
       >
-        💬 댓글은 Giscus 설정 후 활성화돼. (GitHub repo·Discussions·giscus.app ID 필요)
+        💬 댓글은 Supabase 연결 후 활성화돼. (README의 “댓글 켜기” 참고)
       </div>
     );
   }
+  const comments = await getComments(postSlug);
   return (
     <div style={{ marginTop: 56, borderTop: "1px solid var(--line)", paddingTop: 32 }}>
-      <Giscus
-        repo={repo as `${string}/${string}`}
-        repoId={process.env.NEXT_PUBLIC_GISCUS_REPO_ID!}
-        category={process.env.NEXT_PUBLIC_GISCUS_CATEGORY!}
-        categoryId={process.env.NEXT_PUBLIC_GISCUS_CATEGORY_ID!}
-        mapping="pathname"
-        reactionsEnabled="1"
-        emitMetadata="0"
-        inputPosition="top"
-        theme={theme === "dark" ? "dark" : "light"}
-        lang="ko"
-        loading="lazy"
-      />
+      <CommentSection postSlug={postSlug} initialComments={comments} />
     </div>
   );
 }
