@@ -36,7 +36,7 @@ export default function TagFilter({ posts, tags }: { posts: PostMeta[]; tags: st
       </div>
       <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))" }}>
         {shown.map((p) => (
-          <PostCard key={p.slug} post={p} />
+          <PostCard key={p.slug} post={p} large={!active && p.featured} />
         ))}
       </div>
     </>

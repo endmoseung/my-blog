@@ -47,6 +47,32 @@ body {
   color: #fff;
 }
 
+/* 코드블록 (rehype-pretty-code) */
+pre {
+  background: #1a1726 !important;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px 18px;
+  overflow-x: auto;
+  margin: 22px 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+pre code {
+  background: none !important;
+  padding: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+/* 인라인 코드 */
+:not(pre) > code {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  padding: 2px 7px;
+  border-radius: 7px;
+  font-size: 0.88em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 /* 카드 호버 — 살짝 떠오르며 컬러 그림자 */
 .post-card:hover {
   transform: translateY(-4px);
