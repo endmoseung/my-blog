@@ -51,15 +51,33 @@ export default function Hero() {
     const draw = () => {
       const w = canvas.clientWidth, h = canvas.clientHeight;
       ctx.clearRect(0, 0, w, h);
+
       for (const d of dots) {
-        const tx = mouse.active ? mouse.x : w / 2;
-        const ty = mouse.active ? mouse.y : h / 2;
-        // 마우스 쪽으로 살짝 끌리되 완전히 모이진 않게(반발 거리)
-        const dx = tx - d.x, dy = ty - d.y;
-        const dist = Math.hypot(dx, dy) || 1;
-        const pull = mouse.active ? 0.012 : 0.004;
-        d.x += dx * pull + (dx / dist) * (dist > 120 ? 0.4 : -0.6);
-        d.y += dy * pull + (dy / dist) * (dist > 120 ? 0.4 : -0.6);
+        // 1) 도형끼리 서로 밀어내 고르게 퍼지게(분산력)
+        for (const o of dots) {
+          if (o === d) continue;
+          const ox = d.x - o.x, oy = d.y - o.y;
+          const od = Math.hypot(ox, oy) || 1;
+          const minGap = d.r + o.r + 14;
+          if (od < minGap) {
+            const push = (minGap - od) / minGap;
+            d.x += (ox / od) * push * 0.8;
+            d.y += (oy / od) * push * 0.8;
+          }
+        }
+        // 2) 마우스가 가까이 오면 살짝 끌어당김(부드러운 인터랙션)
+        if (mouse.active) {
+          const dx = mouse.x - d.x, dy = mouse.y - d.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          if (dist < 220) {
+            d.x += (dx / dist) * (0.6 * (1 - dist / 220));
+            d.y += (dy / dist) * (0.6 * (1 - dist / 220));
+          }
+        } else {
+          // 3) 평상시엔 아주 느린 둥둥 떠다님
+          d.x += Math.sin((d.hue + d.x) * 0.01) * 0.15;
+          d.y += Math.cos((d.hue + d.y) * 0.01) * 0.15;
+        }
         // 경계 안에 가두기
         d.x = Math.max(d.r, Math.min(w - d.r, d.x));
         d.y = Math.max(d.r, Math.min(h - d.r, d.y));

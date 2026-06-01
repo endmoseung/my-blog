@@ -5,6 +5,7 @@ import { getAllPosts, getPostBySlug } from "@/lib/posts";
 import { mdxComponents } from "@/components/mdx/MDXComponents";
 import ReadingProgress from "@/components/ReadingProgress";
 import Comments from "@/components/Comments";
+import FadeIn from "@/components/FadeIn";
 
 export function generateStaticParams() {
   return getAllPosts().map((p) => ({ slug: p.slug }));
@@ -59,15 +60,17 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           ))}
         </div>
       </header>
-      <MDXRemote
-        source={post.content}
-        components={mdxComponents}
-        options={{
-          mdxOptions: {
-            rehypePlugins: [[rehypePrettyCode, { theme: "github-dark" }]],
-          },
-        }}
-      />
+      <FadeIn>
+        <MDXRemote
+          source={post.content}
+          components={mdxComponents}
+          options={{
+            mdxOptions: {
+              rehypePlugins: [[rehypePrettyCode, { theme: "github-dark" }]],
+            },
+          }}
+        />
+      </FadeIn>
       <Comments />
     </article>
   );

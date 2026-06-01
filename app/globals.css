@@ -47,6 +47,32 @@ body {
   color: #fff;
 }
 
+/* 카드 호버 — 살짝 떠오르며 컬러 그림자 */
+.post-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px -12px color-mix(in srgb, var(--accent) 45%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+}
+
+/* 내비 링크 — 밑줄이 좌→우로 자라는 효과 */
+.nav-link {
+  position: relative;
+}
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  height: 2px;
+  width: 0;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.22s ease;
+}
+.nav-link:hover::after {
+  width: 100%;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {
