@@ -34,7 +34,11 @@ export function getAllPosts(): PostMeta[] {
     .filter((f) => f.endsWith(".mdx"))
     .map((f) => read(f.replace(/\.mdx$/, "")))
     .sort((a, b) => (a.date < b.date ? 1 : -1))
-    .map(({ content: _content, ...meta }) => meta);
+    .map((p) => {
+      const { content, ...meta } = p;
+      void content;
+      return meta;
+    });
 }
 
 export function getPostBySlug(slug: string): Post {
