@@ -10,7 +10,7 @@ export default function Nav() {
       >
         내 블로그
       </Link>
-      <div className="flex items-center gap-5" style={{ fontWeight: 600 }}>
+      <div className="flex items-center gap-4 sm:gap-5" style={{ fontWeight: 600 }}>
         <Link href="/blog" className="nav-link">글</Link>
         <Link href="/about" className="nav-link">소개</Link>
         <ThemeToggle />

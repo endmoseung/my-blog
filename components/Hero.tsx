@@ -130,12 +130,12 @@ export default function Hero() {
           cursor: "crosshair",
         }}
       />
-      <h1 style={{ fontSize: "2.6rem", fontWeight: 800, marginTop: 28, lineHeight: 1.12, letterSpacing: "-0.03em" }}>
+      <h1 style={{ fontSize: "clamp(1.7rem, 6vw, 2.6rem)", fontWeight: 800, marginTop: 28, lineHeight: 1.15, letterSpacing: "-0.03em" }}>
         안녕! <span style={{ color: "var(--accent)" }}>반가워.</span>
         <br />
         여긴 내 생각을 푸는 곳이야.
       </h1>
-      <p style={{ color: "var(--muted)", marginTop: 12, fontSize: "1.05rem" }}>
+      <p style={{ color: "var(--muted)", marginTop: 12, fontSize: "clamp(.95rem, 3vw, 1.05rem)" }}>
         위 그림에 마우스를 올려봐 — 따라온다 🎈
       </p>
     </section>
