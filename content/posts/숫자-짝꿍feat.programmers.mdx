@@ -1,0 +1,58 @@
+---
+title: "숫자 짝꿍(feat.programmers)"
+date: "2022-10-12"
+excerpt: "프로그래머스 레벨1문제 숫자 짝꿍에 대한 문제의 풀이입니다.제 방법이 100퍼센트 맞는건 아니지만 제가 풀었던 방식을 공유하려고 합니다.주어진 값이 string이므로 값을 split으로 나눠서 해당값을 배열로 만들어준다음, 그 두 배열들을 하나씩 비교해준다.(sorte"
+tags: ["알고리즘", "자바스크립트", "프로그래머스"]
+featured: false
+source: "https://velog.io/@endmoseung/숫자-짝꿍feat.programmers"
+---
+
+> 프로그래머스 레벨1문제 숫자 짝꿍에 대한 문제의 풀이입니다.
+제 방법이 100퍼센트 맞는건 아니지만 제가 풀었던 방식을 공유하려고 합니다.
+
+## 1 . 문제
+![](/images/숫자-짝꿍feat.programmers/01.png)
+
+![](/images/숫자-짝꿍feat.programmers/02.png)
+
+## 2 . 풀이방법
+주어진 값이 string이므로 값을 split으로 나눠서 해당값을 배열로 만들어준다음, 그 두 배열들을 하나씩 비교해준다.(sortedX,sortedY)
+근데 해당값이 같다면 그 값은 제외해야 하기때문에 투포인터 알고리즘을 사용해서 비교해서 값이 같은 수를 새로 배정한 배열(sameNumber)에 값을 담는다.
+값이 같은수가 담긴 배열(sameNumber)은 낮은수부터 정렬되있기 떄문에 해당 배열을 reverse로 재정렬해준다음 join()함수를 이용해서 string으로 만들어준다.
+단 배열(sameNumber)에 값이 하나도 없으면 "-1" 배열내에 0만있으면 "0"로 값을 출력해야하기 떄문에 if문으로 예외처리를 해준다.
+> https://velog.io/@endmoseung/%EC%95%8C%EA%B3%A0%EB%A6%AC%EC%A6%98%ED%88%AC%ED%8F%AC%EC%9D%B8%ED%84%B0-%EC%95%8C%EA%B3%A0%EB%A6%AC%EC%A6%98-feat.Javascript
+투포인터 알고리즘이란?
+
+```
+function solution(X, Y) {
+    let answer;
+    let sameNumber = [];
+    const sortedX = X.split("").sort();
+    const sortedY = Y.split("").sort();
+    console.log(sortedX,sortedY)
+    let p1=0;
+    let p2=0;
+    while(p1<X.length&&p2<Y.length){
+        if(sortedX[p1]===sortedY[p2]){
+            sameNumber.push(sortedX[p1++]);
+            p2++
+        }else if(sortedX[p1]<sortedY[p2]){
+            p1++
+        }else{
+            p2++
+        }
+    }
+    console.log(sameNumber)
+    if(sameNumber.length===0){//여기서 주의해야할 점이 sameNumber===[]로 비교하면 안된다.
+        answer="-1"// 우리가 변수에 담긴 []와 비교를 했을때 둘의 값은 false가 나오므로 배열의 length로 계산해줘야한다.
+    }else if(Number(sameNumber.join(""))===0){
+        answer="0"
+    }else{
+        console.log(sameNumber)
+        answer = sameNumber.reverse().join("");
+    }
+    return answer;
+}
+```
+## 3 . 끝으로
+혹시나 궁금한점이 있거나 내용에 문제가 있다면 댓글 남겨주시면 감사하겠습니다:)

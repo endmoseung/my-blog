@@ -1,0 +1,122 @@
+---
+title: "React Filtering 구현하기 feat(냉장고 파먹기)"
+date: "2022-10-05"
+excerpt: "내가 만든 프로젝트 \"냉장고 파먹기\"에서 레시피들을 추천받고 해당 레시피들중 원하는 음식 Or 원하지 않는 음식들로 Filtering하는 Modal이 있었습니다.이때 어떤 방식으로 Filtering을 했는지 소개하려 합니다.우선 이 필터링 기능이 어떤기능인지부터 알아야"
+tags: ["냉장고파먹기", "리액트", "자바스크립트", "필터링"]
+featured: false
+source: "https://velog.io/@endmoseung/React-Filtering-구현하기-feat냉장고-파먹기"
+---
+
+> 내가 만든 프로젝트 "냉장고 파먹기"에서 레시피들을 추천받고 해당 레시피들중 원하는 음식 Or 원하지 않는 음식들로 Filtering하는 Modal이 있었습니다.
+이때 어떤 방식으로 Filtering을 했는지 소개하려 합니다.
+
+## 1 . Filtering 기능
+우선 이 필터링 기능이 어떤기능인지부터 알아야했다. PM분에게 기획을 받을때 네이버 쇼핑처럼 우리 페이지 우측상단에 필터링 버튼이 있고 해당 버튼을 클릭했을떄 오른쪽에서 왼쪽으로 이동하면서 등장하는 필터기능이 필요하다고 하셨다.
+또한 우리 서비스가 비록 웹으로 만들긴 했지만 주 타겟은 모바일 유저기때문에 모바일뷰로 구현을 했는데, 모바일에서는 Modal외곽 부분을 클릭해도 해당 페이지가 닫히기 때문에 이 또한 요청받았다.
+
+그리고 이제 실제로 필터기능을 구현해야했는데 필터 항목은 총 3가지가 있었다.
+요리의 Level로 filter하는 기능, 원하는 나라 음식으로 filter하는 기능, 우리가 원하지 않는 재료가 포함된 레시피는 빼버리는 기능 총 세개가 있었다.
+그리고 Level로 필터하는 버튼은 다른 버튼을 클릭시 원래 클릭된 버튼은 지워지고 다른 버튼으로 치환되는 기능까지 있었다.
+이처럼 해당 기능마다 로직이 달랐기 떄문에 어떤식으로 고민을 많이하고 시행착오도 많이 거쳤다.
+
+## 2 . 실제 구현(Filter Modal)
+![](/images/React-Filtering-구현하기-feat냉장고-파먹기/01.gif) (실제 해당 페이지)
+> 그래서 이를 구현하기 위해 고민했다. 이걸 어떤식으로 구현해야할까 ? 
+
+정말 많은 방식으로 구현해본결과 내가 내린 정답은 두개의 div박스를 구현해서 해당 우리 내용이 담긴 container를 display:hidden으로 가려두고 해당 버튼이 클릭됐을때 transform을 이용해서 왼쪽으로 이동하게끔 코딩했다.
+```
+const FilterContainer = styled(motion.div)`
+  transform: translateX(100%);
+  transition: all 300ms ease-in;
+  height: 100%;
+  min-height: calc(100vh - 56px);
+  background-color: ${({ theme }) => theme.colors.WHITE};
+  overflow-y: scroll;
+`;// 해당 css부분
+```
+그리고 외곽부분은 우리 view의 크기만큼 회색배경으로 마스킹했어야 했기에 해당 box를 추가로 만들어서 opacity를 줌으로써 해결했다.
+그리고 Filter Modal이 열리면 스크롤이 안되야 했고, 외부 클릭시 닫혀야 했기에 이는 좋은 Reference를 참조해서 코딩했다.
+http://yoonbumtae.com/?p=3776 모달창이 열릴시 스크롤 방지
+
+
+## 3 . 실제 구현 (Filter 기능)
+> 여기서 정말 많은 시간이 걸렸다. 기능에 구현해야할게 너무 많아서, 해당기능이 되면 다른 기능에서 bug가 나오고 이제 이 bug를 해결하면 다른 bug가 생기는등 병목이 좀 있었다.
+
+처음에는 Filter Modal안에 버튼들이 클릭될때마다 해당 데이터를 실제로 조작해서 상태를 업데이트하면서 구현했는데, 이는 모든 Filter 기능에서 만족시킬수 없었기에 우리의 데이터들을 보관하고 해당값을 필터하는 Title을 뺴고 추가하는 관리하는 상태 + 해당 Title을 토대로 우리의 데이터들을 복사해서 해당값들을 Title이 변경될때마다 조작해서 UI에 반영했다.
+
+Title들을 실제로 배열안에 담을때 "제 실력은 이 정도에요"항목은 2개가 있었는데, 다른 값을 고르면 원래 값은 삭제되고 클릭한 값으로 변경되야 했기에 이부분에서 많은 코드를 작성했다.
+```
+const handleFilterClick = (items) => {
+    const itemName = items.title;
+    const isClicked = items.isClicked;
+    if ( // 원래 배열에서 요알못이나 요잘알이라는 title이 있을경우 해당 title을 제거
+      (itemName === "요알못" || itemName === "요잘알") &&
+      filteredButton.filter((item) => item === itemName).length === 1
+    ) {
+      setFilteredButton((prev) =>
+        filteredButton.filter((item) => item !== itemName)
+      );
+      setFilterClick(filterClick - 1);
+      return;
+    }
+    if (
+      (itemName === "요알못" || itemName === "요잘알") &&
+      filteredButton.filter((item) => item === "요알못" || item === "요잘알")
+        .length > 0
+    ) {
+      const firstIndexFiltered = filteredButton.filter((item) => {
+        if (item === "요알못" || item === "요잘알") {
+          return;
+        } else {
+          return item;
+        }
+      });
+      setFilteredButton((prev) => [...firstIndexFiltered, itemName]);
+      return;
+    }}
+```
+
+이제 해당 Title을 모아논 배열들을 토대로 우리의 데이터들을 Filtering한 값을 User에게 보여줘야했는데, 해당 Title이 우리의 레시피에서 포함되야하는 기능도 있고(원하는 나라음식, 원하는 레벨), 해당 Title이 우리 레시피에서 제외 돼야하는 기능(이 재료는 뺴고 싶어요)도 있었다.
+심지어 원하는 나라음식 버튼은 2개가 있기에 해당 데이터를 왔다갔다 하면되는데 원하는 나라음식 버튼은 우리의 데이터가 50개중에서 총 5개항목으로 데이터가 계속 수정되야 했기에(우리의 레시피에서 중식을 고르고 한식을 고르면, 중식으로 필터된 데이터에서 한식데이터를 새로 추가해야함)우리의 해당 Title을 모아준 배열에서 나라음식 버튼을 먼저 진행했다.
+
+우선 useEffect로 필터 버튼을 클릭했을때 해당 배열의 변화를 인자로 받아서 함수를 작성했다.
+함수는 해당 배열을 재정렬먼저한다. 위에서 말했듯이 일반적인 배열의 인자순서로 진행하면 나라음식 버튼에서 문제가 생기기 때문에 해당 title들을 배열의 앞으로 빼버리고 해당값으로 먼저 필터링을 진행하고 후에 음식level title이나 음식 재료로 레시피 제외하는 title로 필터링을 진행했다.
+```
+const copyFilteredButton = [...filteredButton];
+    let copyFilteredButtonSorted = [...filteredButton];
+    copyFilteredButton.forEach((items, index) => {
+      if (
+        filterItem[1].category.filter((item) => item.title === items).length ===
+        0
+      ) {
+        const result = copyFilteredButton.filter((item) => item !== items);
+        result.unshift(items);
+        copyFilteredButtonSorted = result;
+      }
+    });//filterItem=> 해당 모든 Item들의 title을 들고있는 배열의 1번Index값이 나라음식 버튼
+```
+
+이제 title을 모아논 배열의 정렬이 됐으니 우리의 레시피들을 해당 title로 필터링하면 끝이었는데 어떻게 필터링하는가는 foreach구문으로 해결했다.
+우리의 title배열을 돌면서 해당 title값을 레시피 객체에 접근해서 해당 값이 해당하면 레시피를 뺴거나 추가하는 로직을 작성했고 이제 title배열 모든 값을 돌았으면 해당값으로 상태를 변경해주는 과정을 거쳤다.
+```
+let lotatedFiltered = [];
+    let countryFiltered = [];
+    copyFilteredButtonSorted.forEach((items, index) => {
+      ...
+
+    setFilterFoodData(
+      countryFiltered.length > 0 ? countryFiltered : lotatedFiltered
+    ); // 로직이 너무 길어서 축약했습니다.
+```
+
+## 4 . 코드 리팩토링
+코드들에서 문제가 보였다. 일단 우리의 코드가 가독성이 좋아야하는데 이 필터로직은 무려 주석포함 110줄이다.
+이는 지금은 기억날수도 있지만 3개월뒤에 내가 보거나 이 프로젝트를 다른 개발자가 본다면 어떤 함수가 어떻게 진행되는지 전혀 모를 확률이 높다.
+그러면 주석을 달아서 해당 함수를 설명해도 되겠지만 그렇게 하지않고 함수를 알아보기 쉽게 작성할 필요가 있었다.
+그래서 이 코드들을 리팩토링하는건 필수였고, 어떤걸 리팩토링 해야되는지 생각해봤다.
+> 함수를 가독성좋게? 
+1. 그럼 해당 함수내에 여러 값을 비교하는 로직을 따로 뺴서 함수로 만들어서 코드양을 줄여야겠다. 
+2. 중복되는 코드들은 따로 정의해서 중복을 피하고 후에 유지보수를 좋게만들자.
+3. 코드에서 if구문으로 도배하니 로직이 더러워 보였는데 switch문을 사용하면 조금더 깔끔할것 같다.
+
+위와 같이 내용이 정리됐고, 해당 프로젝트를 타입스크립트로 마이그레이션 하면서 리팩토링을 진행할 생각이라 모두 손보면서 코드를 수정해야겠다.

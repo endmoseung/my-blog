@@ -1,0 +1,111 @@
+---
+title: "데이터 캐시, 호출 최적화(Debounce)를 이용한 검색 최적화"
+date: "2022-09-29"
+excerpt: "이번 프리온보딩 기업과제에서 https&#x3A;//clinicaltrialskorea.com/ &lt;&lt;사이트의 검색기능을 클론하는 과정에서 검색최적화를 적용해서 만들어봤다.왜 검색기능에서 API호출이 최적화되야하는 의문점부터 들어서 유튜브, 구글에서 직접 검색"
+tags: ["최적화", "캐시"]
+featured: false
+source: "https://velog.io/@endmoseung/데이터-캐시-호출-최적화Debounce를-이용한-검색-최적화"
+---
+
+>이번 프리온보딩 기업과제에서 https://clinicaltrialskorea.com/ &lt;&lt;사이트의 검색기능을 클론하는 과정에서 검색최적화를 적용해서 만들어봤다.
+
+## 1 . API호출 최적화
+왜 검색기능에서 API호출이 최적화되야하는 의문점부터 들어서 유튜브, 구글에서 직접 검색을 구현해보니 알았다. 우리가 검색해서 한 낱말마다 API를 호출한다면 Youtube 라는 간단한 검색을 할때도 Y+o+u+t+u+b+e총 7번 API를 호출하게된다.
+이를 해결하기위해 **호출횟수를 줄이던가**, 이전 **검색한 내용은 저장**해뒀다가 API호출을 안하는 방법이 있다고 생각이 들었고 그래서 실제로 적용해서 프로젝트를 만들었다.
+
+## 2 . 호출횟수를 줄이는법
+
+호출횟수를 줄이는 법은 검색해보니 두가지 방법이 있었다. API를 짧은기간에 여러번 호출하게 될때, 정해진 텀안에 지속적 호출이 이뤄지면 텀안에 적용된 API호출을 모두 막아버리고 텀이 지난것만 API호출하는 Debounce개념과, 마지막 함수가 실행후 정해진 텀동안 API호출을 막아버리는 Throttling개념이 있었다.
+> https://www.zerocho.com/category/JavaScript/post/59a8e9cb15ac0000182794fa  **쓰로틀링과 디바운싱**
+
+해당 문제를 리액트 쿼리로 해결하면 훅하나로 해결이 가능하지만 이를 바닐라로 해결하고자 Session Storage와, lodash라이브러리의 Debounce, useCallback함수를 이용했다.
+우리가 해결해야할 문제는 검색을 했을때 일정기간 텀안에 여러번의 API호출을 막는것이다.
+이를 해결하기 위해서 Debounce함수로 텀을두고 어떤 값이 바꼈을때 해당함수를 호출할건지를 위한 UseEffect함수, 이제 실제로 어떤 API호출의 연속적인 텀이후에 발생한 호출을 실제로 할 API호출함수가 있어야했다.
+검색할때 변화를 인지할 input에 Onchange를 둬서 useState(currentSearch)로 관리했다.
+
+```
+const delayedQuery = useCallback(
+    debounce((q: any) => sendQuery(q), 500),
+    []
+  );
+
+  const sendQuery = async (q: string) => {
+      const savedQuery: any = sessionStorage.getItem(`${q}`);
+      if (JSON.parse(savedQuery)) {
+        setSearchState(JSON.parse(savedQuery));
+        console.log('cachedData');
+      } else {
+        console.log('newData');
+        const data = await getSearchInfos(q);
+        setSearchState(data);
+      }
+    }; //해당값이 처음 받는 검색값이면 API호출 아니라면 SessionStorage에서 가져옴
+
+  useEffect(() => {
+    delayedQuery(currentSearch);
+  }, [currentSearch]);
+```
+이제 실제 API호출 최적화가 얼마나 잘된지 확인해보겠다.
+**비최적화**
+![](/images/데이터-캐시-호출-최적화Debounce를-이용한-검색-최적화/01.gif)
+
+**최적화**
+![](/images/데이터-캐시-호출-최적화Debounce를-이용한-검색-최적화/02.gif)
+콘솔창을 확인해보면 최적화시 한번만 api호출을 하지만 비최적화에서는 한 낱말마다 한번씩 api를 호출하는걸 console창을 통해 알 수 있다.
+
+onchange마다 해당함수를 호출하지 않고 useEffect로 한 이유는 해당 검색들을 클릭했을때 해당값으로 서치창의 Value를 바꿔주기 위해 해당 onChange는 다른 InputValue를 set해주는 함수를 사용했다.
+
+## 3 . 검색한 내용을 저장하다 : 캐시
+
+![](/images/데이터-캐시-호출-최적화Debounce를-이용한-검색-최적화/03.png)
+> 필자가 알던 캐리사고 하면 메이플에 캐시밖에 없었다는 사실 ...
+
+우선 캐시에 간단한 이론을 알기위해 MDN에서 공식 문서를 가져왔다.
+> 웹 사이트와 애플리케이션의 성능은 이전에 가져온 리소스들을 재사용함으로써 현저하게 향상될 수 있습니다. 웹 캐시는 레이턴시와 네트워크 트래픽을 줄여줌으로써 리소스를 보여주는 데에 필요한 시간을 줄여줍니다. HTTP 캐싱을 활용하면 웹 사이트가 좀 더 빠르게 반응하도록 만들 수 있습니다.
+
+즉 API통신은 값이 비싼 데이터기때문에 이전에 얻은 값을 재사용한다고 간단하게 볼 수 있다.
+
+그럼 우리는 어디에 이런 값들을 저장해야하는지에 대한 문제가 있었고, 나는 그 해결책으로 Session Storage로 꼽았다.
+처음에는 Local Storage에 저장하고 사용했었는데, 해당 검색값을 반영구적으로 저장하는건 오버액션이라 생각해서 Session에 저장했다.
+
+```
+//API호출 함수
+export const getSearchInfos = async (query: string) => {
+  try {
+    const { data } = await apiRoot(`/sick?q=${query}&_limit=7`);
+    console.log('api Calling');
+    sessionStorage.setItem(`${query}`, JSON.stringify(data));
+    return data;
+  } catch (err) {
+    throw new Error('not found page');
+  }
+};
+
+//캐싱 구현 함수
+const sendQuery = async (q: string) => {
+      const savedQuery: any = sessionStorage.getItem(`${q}`);
+      if (JSON.parse(savedQuery)) {
+        setSearchState(JSON.parse(savedQuery));
+        console.log('cachedData');
+      } else {
+        console.log('newData');
+        const data = await getSearchInfos(q);
+        setSearchState(data);
+      }
+    };
+```
+우리의 서치 Value가 새로 작성한 값이라면 API를 호출하고 해당데이터를 받아서 서치 Value를 키값으로 Session에 저장한다.
+이제 우리가 나중에 다시 해당값을 검색해서 캐싱 구현 함수에서 만약 해당 Search Value를 키값으로 Session에서 값을 조회해서 있다면 해당 값을 Get해서 상태를 업데이트 해준다.
+이제 해당 과정을 실제로 확인해보겠다.
+![](/images/데이터-캐시-호출-최적화Debounce를-이용한-검색-최적화/04.gif)
+
+
+## 4 . 사용해본후
+이때까지 만들었던 프로젝트에서 단기간내에 API를 호출하는 행위는 없었기도 했고, 해당 API를 호출하는게 비싼 비용이라는 생각도 안해봤기에 API호출 최적화에 대해서는 신경써본적은 없었다.
+하지만 예를 들어 백엔드의 서버가 배포회사를 통해서 배포중이고, 해당 값을 1만번 사용하는데 만원이라고 가정해보자. 만약 우리가 검색해서 최적화를 하지 않고 구성한다면 우리의 서비스에서 검색은 비용이 높은 기능이고 이는 서비스에서 **불리하게** 적용된다.
+
+직전에 만들었던 프로젝트에서 값을 불러오는데 통신시간이 오래걸려서 캐싱에 대해서는 고려는 해본적은 있었다.
+고려만하고 배포에 급급해서 구현은 안했지만 만약에 우리가 캐싱을 구현해서 서비스를 배포한다면 API를 호출하는 **횟수도 줄어들뿐**더러 사용자가 우리가 구성한UI에 대해서 매번 API를 호출하는거보다 빠르게 확인이 가능하기에 **사용자경험**에도 긍정적일것이다.
+
+내가 좋아하는 개발자가 한 말을 인용하자면 "개발자의 가치는 서비스의 가치가 결정한다." 
+우리가 예쁜 코딩으로 엄청난 성능으로 구현하는것도 중요하지만 우리의 코딩의 가치를 생각하고 서비스에 어떤 영향을 미치는지 인지하는 개발자가 되고싶다.

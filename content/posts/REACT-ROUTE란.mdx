@@ -1,0 +1,80 @@
+---
+title: "REACT ROUTER란?"
+date: "2022-06-08"
+excerpt: "TMI : 원래 티스토리에서 블로그를 작성 했었는데 지금 작성하고 있는 Text div박스가 너무 써보고 싶어서 벨로그로 넘어왔습니다. 하하  1 . 왜 REACT ROUTER인가? 필자는 현재 리액트 공부를 하고 있는데 그중에서도 a태그를 쓰지 않고 많은 개발자들이"
+tags: ["라우터", "리액트"]
+featured: false
+source: "https://velog.io/@endmoseung/REACT-ROUTE란"
+---
+
+> TMI : 원래 티스토리에서 블로그를 작성 했었는데 지금 작성하고 있는 Text div박스가 너무 써보고 싶어서 벨로그로 넘어왔습니다. 하하
+
+![](/images/REACT-ROUTE란/01.png)
+
+
+## 1 . 왜 REACT ROUTER인가?
+필자는 현재 리액트 공부를 하고 있는데 그중에서도 a태그를 쓰지 않고 많은 개발자들이 REACT ROUTER를 왜 쓸까 라는 의문도 있었고, 현재 공부를 드림코딩 사이트의 REACT강의로 하고 있는데 여기서 REACT ROUTER개념을 이용해 페이지 이동을 구현한다. 그래서 이왕 배우는 김에 글로 남겨 기억을 좀 오래하고, 혹시나 ROUTER의 개념을 알고 싶은 사람을 위해 글을 남기려한다.
+
+## 2 . REACT ROUTER란?
+REACT ROUTER를 알기 위해서는 ROUTING의 개념을 알 필요가 있는데 ROUTING이란 간단하게 말하면 사용자가 요청한 URL에 따라 해당 URL에 맞는 페이지를 보여주는 것이라고 생각할 수 있다. 
+이렇게 ROUTING관련 라이브러리가 많이 있고 그중에서도 사람들이 가장 많이쓰는 라이브러리가 REACT ROUTER이다.
+
+그럼 주변에 개발자 하려는 친구가 질문할 수 있다. 
+>** 익명의 친구 1** : "ㅇㅋ 알겠어 사람들 많이 쓰는거 근데 그래서 왜 REACT ROUTER를 써야되냐?"
+
+이런 질문을 받았을떄는 이렇게 답해주면된다.
+> **나** :"a태그만 써도 페이지 이동이 가능하고 다른 라이브러리도 있지만, A태그는 화면을 새로고침 한다음에 페이지를 이동한다는 단점이 있어.    
+하지만 REACT ROUTER에서는 새로운 페이지를 로드하지 않고 하나의 페이지 안에서 필요한 데이터만 가져오는 형태를 가지기 떄문에 불필요한 렌더링을 막을수 있다~"
+
+## 3 . 그래서 REACT ROUTER 어떻게 쓰는데?
+
+#### 1) **설치** npm install react-router-dom
+#### 2) **add** yarn add react-router-dom
+
+우선 react-router-dom을 npm을 통해 설치해주고 본인이 사용하고자 하는곳에 add react-router-dom 해주면된다. 
+
+#### 3) 실사용
+```
+<BrowserRouter>
+          <Routes>
+            <Route
+              path="/"
+              element={<Login authService={authService}></Login>}
+            ></Route>
+            <Route
+              path="/maker"
+              element={<Maker authService={authService}></Maker>}
+            ></Route>
+          </Routes>
+        </BrowserRouter>
+```
+우선 Router를 위한 파일을 새로 하나 만들어서 BrowserRouter안에 Routes안에 Route로 도메인을 설정가능한데 도메인은 위에 코드처럼 path"도메인"처럼 작성해주고 element에 본인이 원하는 페이지를 넣어주면 된다.
+
+REACT ROUTER에서 페이지 이동을 할떄는 두가지 방법이 있고 그중 LINK를 통해서 하는방법과 useNavigate를 사용하는 방법이있다.
+
+### 3-1 . LINK를 통한 페이지이동
+```
+<Link to="/mainChoice">
+   <MenuRecommendBtn type="button">메뉴 추천받기</MenuRecommendBtn>
+</Link>
+```
+이전 테오의 스프린트떄 사용했던 방법을 긁어온것인데 위와같은 방법으로 LINK하면 아마 자동으로 react-router-dom에서 Import될것인데 안되면 직접 Import해준뒤 to="본인이 이동하고자하는 도메인"으로 해주면 된다.
+처음엔 이렇게만 해주면 그래서 이동은 어떻게 하지 ? onclick과 같은 이벤트가 있어야 하는거 아닌가? 라는 생각을 했었는데 LINK를 쓰면 자동으로 클릭시 이동하는개념이고 이는 **A태그와 유사**하다고 보면 된다.
+그럼 클릭시 페이지 이동 말고 어떤 로직에서 페이지 이동은 어떻게 해야하냐? 라는 질문은 아래에서 해결 가능하다.
+### 3-2 . useNavigate를 통한 페이지이동
+우선 이번 드림코딩 강의에서 Firebase(아마 Firebase이용도 블로그에 다룰것 같다.)를 이용한 로그인 이후 페이지가 넘어가는 상황에서 useNavigate를 사용했다.
+
+const navigator = useNavigate();로 useNavigate로 선언해주고 본인이 원하는 로직에서 이제 navigator("이동하고자 하는 도메인 = 위에서 path로 설정했던 도메인")로 작성하면 그 로직이 잘 실행되면 navigator()안에 받은 인자의 페이지로 이동한다.
+
+## 4 . REACT ROUTER쓰고난 후기
+솔직히 처음으로 ROUTING을 위해 사용한 라이브러리가 REACT ROUTER라서 다른 ROUTING 라이브러리와 비교는 힘들지만,  앞에서 설명했던
+> '**새로운 페이지를 로드하지 않고 하나의 페이지 안에서 필요한 데이터만 가져오는 형태를 가지기 떄문에 불필요한 렌더링을 막을수 있다**' 
+
+라는 개념에서 REACT스러운 라이브러리라는 생각이 들었다.
+
+## 5 . 논외
+
+이번에 Tistory를 사용하다가 Velog로 넘어왔는데 정말 개발자 친화적으로 만들어진 웹같다.
+특히 일반적인 블로그에서는 제목1, 제목2, 제목3, 부제목1,부제목2 이런식으로 글자수의 크기나 집중도를 정하는 반면 Velog에서는 html용어인 H1,H2,H3,H4로 사용하는것이 정말 인상적이었다.
+그리고 코드를 작성해주게 해주는 피처도 있고 특히 Text div박스가 너무 좋다.
+그래서 앞으로 개발적인 내용은 전부 Velog에 작성할것 같다 Velog최고!

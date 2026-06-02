@@ -1,0 +1,167 @@
+---
+title: "도형 만들고 이동하기 feat(React)"
+date: "2022-11-02"
+excerpt: "우리가 자주사용하는 그림판, 개발자들이 자주 사용하는 피그마에서는 도형을 만들고 이동하고 삭제하는 기능이 가능한데 이는 실제로 되게 간단할 줄 알았다. 하지만 라이브러리없이 구현하는건 어려웠고 도형 만들기를 canvas API를 이용해서 구현하려고 했다.Canvas란"
+tags: []
+featured: false
+source: "https://velog.io/@endmoseung/도형-만들고-이동하기-featReact"
+---
+
+## 1 . 도형 만들기
+우리가 자주사용하는 그림판, 개발자들이 자주 사용하는 피그마에서는 도형을 만들고 이동하고 삭제하는 기능이 가능한데 이는 실제로 되게 간단할 줄 알았다. 하지만 라이브러리없이 구현하는건 어려웠고 도형 만들기를 canvas API를 이용해서 구현하려고 했다.
+> Canvas란 ? (MDN)
+Canvas API는 JavaScript와 HTML canvas 엘리먼트를 통해 그래픽을 그리기위한 수단을 제공합니다. 무엇보다도 애니메이션, 게임 그래픽, 데이터 시각화, 사진 조작 및 실시간 비디오 처리를 위해 사용됩니다.
+Canvas API는 주로 2D 그래픽에 중점을 두고 있습니다. WebGL API 또한 canvas 엘리먼트를 사용하며, 하드웨어 가속 2D 및 3D 그래픽을 그립니다.
+
+Canvas API를 사용하기위해서는 DOM에 직접 접근해야하는데 리액트에서 직접 접근하는방법은 useRef()훅을 사용하는것이고 이에 자세한 설명은 아래에 블로그를 참조하면 좋을 것 같다.
+> https://velog.io/@mokyoungg/React-React%EC%97%90%EC%84%9C-Canvas-%EC%82%AC%EC%9A%A9%ED%95%98%EA%B8%B0%EB%A7%88%EC%9A%B0%EC%8A%A4-%EA%B7%B8%EB%A6%AC%EA%B8%B0 리액트에서 Canvas 그리기
+
+```
+ useEffect(() => {
+    const canvas = canvasRef.current;
+    setCtx(canvas?.getContext("2d"));
+  }, []);
+  ...
+  
+```
+하지만 위는 도형을 단순히 그리기위한 툴이고 우리는 이런 값을 저장해서 내가 그렸던 도형들이 화면에 남아 있어야 했기에 다른 방법을 찾았다.(목적이 화면에 도형을 그리는게 끝이라면 canvas로 사용해도 무관하다.)
+
+최근에 알고리즘 공부를 했기에 이를 어떤식으로 구현하면 좋을지 감이왔다.
+사용자가 첫 드래그를 할때의 좌표값을 시작점으로두고 해당 X좌표값을 left, Y좌표값을 top으로 줌으로써 해당값의 좌표를 찍는다.
+이제 사용자가 드래그를 끝내는 지점에서 해당X좌표값, Y좌표값을 처음값과 비교해서 두 값의 X좌표의 차는 width 두값의 Y좌표의 차는 height으로 둔다.
+이제 이런값들을 객체에 저장하고 이를 배열에 관리해서 해당 배열을 우리의 화면에서 Map해서 보여주면된다.
+
+근데 우리가 마우스를 자바스크립트에서 X와 Y가 양수인 우측하단으로 드래그하면 값이 똑바로 나오지만 좌측이나 상단쪽으로 드래그가 섞이면 값의 차가 음수가 나오기때문에 도형이 그려지지 않는다. 그래서 해당값의 차가 0보다 작다면 X좌표는 해당 width의 절댓값만큼 빼줘야하고 Y좌표는 height의 절댓값만큼 빼줘야한다.
+> 말로 설명하면 어렵기 떄문에 사진을 첨부한다. 발그림 죄송합니다.
+
+![](/images/도형-만들고-이동하기-featReact/01.png)
+
+위에서 A(시작점)에서B(도착점)나 C(도착점)쪽으로 드래그를 한다면 B-A= (100,500), C-A= (300,300)으로 둘다 양수가 나오지만 반대로하면(도착점과 시작점이 반대) 값은 음수가 나온다.
+혹은 B(시작점)에서 C(도착점)로 드래그한다고 가정한다면 B-C=(200,-200)라는 값이 나오기때문에 우리의 height은 -200이라는 값으로 들어가게 될것이다.
+
+그래서 위에 설명했던것처럼 값이 음수라면 해당값에서 추가처리를 해준것이다.
+> 그럼 이제 위의 사진으로 예를 들겠다. 아까 B에서 C로 드래그하면 (200,-200)이므로 오류가 발생할것이니 수정해야한다.
+우리가 항상 드래그의 시작지점을 Left와 Top으로 잡았는데, 값의 차가 음수가나오면 해당 좌표를 재 설정해줘야한다. 
+![](/images/도형-만들고-이동하기-featReact/02.png)
+그래서 위의 사진에서 우리가 D(시작점)점에서 E(도착점)점으로 드래그 한다고 생각하면 우리의 시작점 X좌표 y좌표는 (200,400)이 될것이다.
+우리가 처음에 설정했던 B점(200,600)와 비교하면 정확히 X좌표는 같고 위에서 값의 차가 음수였던 Y좌표의 값만큼 더해주면(-200이므로 더하는것이고 절댓값인 200으로 계산하면 200을 뺴야한다.) D점과 정확히 일치하기 떄문에 이렇게 계산했다.
+아니면 두값의 X와 Y를 서로 비교해서 더 작은값으로 좌표를 둬도 상관없다.
+
+어쩌다보니 알고리즘 문제 블로그처럼 변질해버렸는데, 이런 방식으로 배열에 객체값을 담아서 이를 Map해주면 된다.
+
+```
+ const [isDraw, setIsDraw] = useState(false);
+  const [pos, setPos] = useState([]);//첫 좌표를 저장해두는 상태
+  const [createdLabel, setCreatedLabel] = useRecoilState(createdLabelArray);
+  //우리가 넣어둘 배열 필자는 이를 Recoil로 관리했는데 여러 페이지에서 사용됐기 떄문
+  const currentPhoto = useRecoilValue(searchedPhoto);
+
+  function drawStart(e) {
+    setIsDraw(true);
+    setPos([e.clientX, e.clientY]);
+  }
+
+  function drawEnd(e) {
+    setIsDraw(false); ]
+    let currentX = e.clientX;
+    let currentY = e.clientY;
+    const width = currentX - pos[0];
+    const height = currentY - pos[1];
+    console.log(width, height);
+
+    setCreatedLabel([
+      ...createdLabel,
+      {
+        left: width > 0 ? pos[0] : pos[0] + width,
+        top: height > 0 ? pos[1] : pos[1] + height,
+        width: width > 0 ? width : -width,
+        height: height > 0 ? height : -height,
+        id: createdLabel.length,
+        isClicked: false,
+      },
+    ]);
+  }
+
+  function drawSquare(e) {
+    if (!isDraw) return;
+  }
+
+  return (
+    <Container>
+      <canvas
+        onMouseDown={drawStart}
+        onMouseMove={drawSquare}
+        onMouseUp={drawEnd}
+      ></canvas>
+      {createdLabel?.map((item, index) => (
+        <div
+          key={index}
+          style={{
+            width: item.width,
+            height: item.height,
+            position: "absolute",
+            left: item.left,
+            top: item.top,
+            backgroundColor: `${theme.colors.LABEL_COLOR}`,
+            zIndex: 9999,
+            border: `3px solid ${theme.colors.LABEL_BORDER_COLOR}`,
+          }}
+        ></div>
+      ))}
+    </Container>
+  );
+```
+## 2 . 도형 이동하기
+이제 이런 도형들을 드래그해서 이동하는 기능을 구현했는대 위에서 사용한 드래그이벤트에서 이동하려는 곳의 x좌표,Y좌표로 구했다.
+이렇게 구한값으로 우리가 이동하려는 도형에 해당하는 Array의 index의 객체 left,top값을 수정해주면 끝이었다.
+우리의 원본 배열의 불변성을 해치지않기 위해 해당값을 복사하여 우리가 원하는 값만 교체해서 상태를 업데이트 해줬다.
+```
+const dragEndFunction = (e, index) => {
+    let copyCreatedLabel = Array.from(createdLabel);
+    let changed = {
+      ...copyCreatedLabel[index],
+      left: e.clientX - createdLabel[index].width / 2, //커서한곳을 중간지점으로 이동시키기위해
+      top: e.clientY - createdLabel[index].height / 2,
+    };
+    copyCreatedLabel[index] = changed;
+    setCreatedLabel(copyCreatedLabel);
+  };
+```
+위의 값을 안뺴주면 우리가 찍는 좌표로 그대로 값이 옮겨갈것이고 이는 통상적인 사용자 경험을 해칠거라 생각해서 우리가 이동하는 좌표를 중간점으로 이동하게끔 해줬다.
+저렇게 직접 값을 뺴줘도 되고 해당값을 css의 transform(translate)으로 이동해도 무관하다.
+
+## 3 . 도형 삭제하기(with Backspace and Esc)
+도형 삭제가 제일 쉬울줄 알았는데 제일 까다로웠다.
+왜냐하면 우리가 어떤 도형을 선택해야하는지 알아야하며, 해당값을 Backspace나 Delete를 누르면 삭제되게끔 해야한다.
+그래서 이를 모두 구현하기위해 생각한 방법이 우리가 위에서 Array에 객체를 넣어서 값을 보관했는데 여기 객체에 추가적인 property인 isClicked에 boolean값을 담고 우리가 해당 도형을 클릭하면 해당 값의 isClicked를 true로 바꿔준다.
+그래서 우리가 Esc나 Backspace를 눌렀을때 해당 배열을 검사해서 isClicked의 값이 true인 값을 배열에서 제외하도록 상태를 업데이트하고 우리의 리액트는 제외된 배열을 새로 Map해서 화면에 렌더링 할 것이다.
+
+```
+useEffect(() => { //Esc나 Backspace등 키보드 입력을 받아주기 위함
+    const escKeyModalClose = (e) => {
+      console.log(e.key);
+      if (e.keyCode === 27 || e.keyCode === 8) {
+        deleteThing();
+      }
+    };
+    window.addEventListener("keydown", escKeyModalClose);
+    return () => window.removeEventListener("keydown", escKeyModalClose);
+  }, [createdLabel]);
+  ...
+  const deleteThing = () => { 
+  //우리가 담아논 배열 createdLabel에서 isClicked를 검사하고 
+  해당값이 true라면 그 값을 제외한 배열을 리턴한다.
+    const deleteLabel = createdLabel.filter((item) =>
+      item.isClicked ? "" : item
+    );
+    setCreatedLabel(deleteLabel);
+  };
+```
+
+## 4 . 끝으로
+위의 도형을 만들고 삭제하고 이동하는걸 구현하기위해 우리는 전역상태관리(Recoil 필요해서)를 사용했고, 리액트에서 배열을 사용해서 렌더링 하는법, 객체라는 자료구조로 정보를 저장하는법등 많은걸 알아야했다.
+
+> (실제로 위에있는 좌표이동은 설명하다보니 알고리즘 코테 문제 같았다 ㅋㅋㅋ. 근데 물론 나는 순수함수로 구현했기 때문에 위처럼 복잡했고 라이브러리를 쓰면 간단하게 구현 가능하다.ex) dnd같은 라이브러리)
+
+나는 어떤 문제가 안풀릴떄(위에서 도형만들기 하는데 6시간걸렸다.) 좌절하고 화내는 경향이 있다.
+그렇지만 이런 문제를 해결할때 주는 기쁨이 크기떄문에 코딩을 재밌게 할 수 있는것 같다.

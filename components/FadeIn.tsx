@@ -8,10 +8,12 @@ export default function FadeIn({
   children,
   delay = 0,
   y = 16,
+  style,
 }: {
   children: React.ReactNode;
   delay?: number;
   y?: number;
+  style?: React.CSSProperties;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [shown, setShown] = useState(false);
@@ -40,6 +42,7 @@ export default function FadeIn({
         transform: shown ? "none" : `translateY(${y}px)`,
         transition: `opacity 0.5s ease ${delay}s, transform 0.5s cubic-bezier(0.22,1,0.36,1) ${delay}s`,
         willChange: "opacity, transform",
+        ...style,
       }}
     >
       {children}

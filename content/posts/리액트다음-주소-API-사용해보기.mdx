@@ -1,0 +1,70 @@
+---
+title: "(리액트)다음 주소 API 사용해보기"
+date: "2022-09-06"
+excerpt: "프리온보딩 코스 기업과제중 소비자의 주소를 받아야하는 항목이 있어서 구글링 하던중 다음주소API를 찾았고 이를 공유하려고 합니다.위와같은 주소찾기모달을 많이 봤을겁니다. 다음(현 카카오)에서 주소찾기 관련 API를 만들었고 이를 리액트에서 라이브러리로 만들어서 편하게"
+tags: ["API", "리액트", "프리온보딩"]
+featured: false
+source: "https://velog.io/@endmoseung/리액트다음-주소-API-사용해보기"
+---
+
+> 프리온보딩 코스 기업과제중 소비자의 주소를 받아야하는 항목이 있어서 구글링 하던중 다음주소API를 찾았고 이를 공유하려고 합니다.
+
+## 1 . 다음 주소 API란 ?
+![](/images/리액트다음-주소-API-사용해보기/01.png)
+위와같은 주소찾기모달을 많이 봤을겁니다. 다음(현 카카오)에서 주소찾기 관련 API를 만들었고 이를 리액트에서 라이브러리로 만들어서 편하게 사용하게끔 만들었습니다.
+자세한 설명은 아래 공식문서에서 확인가능하고 자바스크립트로 사용시 아래 링크를 확인하시면 쉽게 사용 가능합니다.
+https://postcode.map.daum.net/guide
+
+하지만 위 내용을 쉽게 사용하게끔 만든 라이브러리를 사용할거고 사용법에 관해서도 공유하려고 합니다.
+
+## 2 . install
+🚀 react-daum-postcode install
+```
+npm install react-daum-postcode
+
+
+```
+위처럼 install 해준후 본인이 원하는 컴포넌트에서 아래와 같이 Import해서 사용할 수 있습니다.
+```
+import DaumPostcode from 'react-daum-postcode';
+```
+
+## 3 . 사용법
+위에서 Import한 DaumPostCode에 style을 입히기 위해 따로 style을 선언해주고 사용했고, onComplete이라는 라이브러리에서 제공하는 method가 있는데 이는 값을 선택했을때 발생하는 event값으로 아래와 같은 정보를 받을 수 있습니다.
+![](/images/리액트다음-주소-API-사용해보기/02.png)
+
+```
+<DaumPostcode
+	style={postCodeStyle}
+	onComplete={onCompletePost}
+></DaumPostcode> // 컴포넌트 내에서 사용한 code
+                
+```
+```
+const postCodeStyle = {
+    width: '400px',
+    height: '400px',
+    display: modalState ? 'block' : 'none',
+  }; // 스타일 정의 code
+```
+
+```
+  const onCompletePost = data => {
+    setModalState(false);
+    setInputAddressValue(data.address);
+    setInputZipCodeValue(data.zonecode);
+  }; // onCompletePost 함수
+```
+제가 만든 프로젝트에서는 해당값을 받아서 실제 인풋값안에 value로 넣어주는 추가작업을 했기에 해당 input에서 onChange이벤트를 걸어주고 이를 상태로 관리해서 사용했습니다.
+![](/images/리액트다음-주소-API-사용해보기/03.png)
+```
+<ZipCodeInput
+	onChange={handleZipCode}
+	value={inputZipCodeValue}
+	placeholder="우편번호"
+	type={'text'}
+></ZipCodeInput> // 해당 input
+```
+## 4 . 실제 사용 
+아래 웹에서 실제 사용을 확인해볼 수 있습니다.
+https://hotsix-fruitte.netlify.app/

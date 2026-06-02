@@ -1,6 +1,9 @@
 import Link from "next/link";
 import type { PostMeta } from "@/lib/posts";
 
+// 일반 카드는 태그를 한 줄로 고정 — 앞 N개만 칩으로, 나머지는 "+N"으로 접어 제목 시작선을 카드마다 맞춘다.
+const MAX_CHIPS = 3;
+
 const tagChip = (t: string) => (
   <span
     key={t}
@@ -11,6 +14,8 @@ const tagChip = (t: string) => (
       background: "var(--chip)",
       padding: "3px 10px",
       borderRadius: 999,
+      flexShrink: 0,
+      whiteSpace: "nowrap",
     }}
   >
     #{t}
@@ -23,7 +28,9 @@ export default function PostCard({ post, large = false }: { post: PostMeta; larg
       href={`/blog/${post.slug}`}
       className="post-card"
       style={{
-        display: "block",
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
         padding: large ? 28 : 20,
         borderRadius: 18,
         background: "var(--card)",
@@ -32,7 +39,15 @@ export default function PostCard({ post, large = false }: { post: PostMeta; larg
         gridColumn: large ? "1 / -1" : undefined,
       }}
     >
-      <div className="flex flex-wrap items-center gap-2" style={{ marginBottom: 10 }}>
+      <div
+        className="flex items-center gap-2"
+        style={{
+          marginBottom: 10,
+          // large(전체폭)는 wrap 허용, 일반 카드는 한 줄 고정 + 넘치면 잘라 제목 시작 위치를 카드마다 일치시킴
+          flexWrap: large ? "wrap" : "nowrap",
+          overflow: large ? undefined : "hidden",
+        }}
+      >
         {large && (
           <span
             style={{
@@ -47,7 +62,23 @@ export default function PostCard({ post, large = false }: { post: PostMeta; larg
             ✦ FEATURED
           </span>
         )}
-        {post.tags.map(tagChip)}
+        {(large ? post.tags : post.tags.slice(0, MAX_CHIPS)).map(tagChip)}
+        {!large && post.tags.length > MAX_CHIPS && (
+          <span
+            style={{
+              fontSize: ".72rem",
+              fontWeight: 600,
+              color: "var(--muted)",
+              background: "var(--chip)",
+              padding: "3px 10px",
+              borderRadius: 999,
+              flexShrink: 0,
+              whiteSpace: "nowrap",
+            }}
+          >
+            +{post.tags.length - MAX_CHIPS}
+          </span>
+        )}
       </div>
       <h3
         style={{
@@ -65,11 +96,21 @@ export default function PostCard({ post, large = false }: { post: PostMeta; larg
           fontSize: large ? "1rem" : ".92rem",
           marginTop: 8,
           lineHeight: 1.6,
+          // excerpt를 2줄로 제한해 카드 간 높이 편차를 줄인다(large는 제한 없음).
+          ...(large
+            ? {}
+            : {
+                display: "-webkit-box",
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: "vertical",
+                overflow: "hidden",
+              }),
         }}
       >
         {post.excerpt}
       </p>
-      <time dateTime={post.date} style={{ color: "var(--muted)", fontSize: ".78rem", display: "block", marginTop: 12 }}>
+      {/* 날짜를 카드 맨 아래로 고정 — 카드 높이가 같아지면 날짜선이 가지런해진다. */}
+      <time dateTime={post.date} style={{ color: "var(--muted)", fontSize: ".78rem", display: "block", marginTop: "auto", paddingTop: 12 }}>
         {post.date}
       </time>
     </Link>

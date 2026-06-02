@@ -1,0 +1,211 @@
+---
+title: "최신 모듈 번들러의 진화(NextJS, React)"
+date: "2025-02-22"
+excerpt: "1. 모듈 번들러란? 말 그대로 모듈(독립된 하나의 소프트웨어 또는 하드웨어의 단위)을 번들링(하나로 묶어주는)해주는 도구이다. 브라우저 모듈 시스템이 아직 표준화되지 않았던 옛날에는 자바스크립트를 HTML script 태그로 연결하여 사용했다. 그리고 이러한 방식은"
+tags: ["React", "next", "webpack", "모듈번들러", "컴파일러"]
+featured: false
+source: "https://velog.io/@endmoseung/modulebundlerevolution"
+---
+
+# 1. 모듈 번들러란?
+말 그대로 모듈(독립된 하나의 소프트웨어 또는 하드웨어의 단위)을 번들링(하나로 묶어주는)해주는 도구이다.
+브라우저 모듈 시스템이 아직 표준화되지 않았던 옛날에는 자바스크립트를 HTML script 태그로 연결하여 사용했다.
+그리고 이러한 방식은 **의존성 관리가 어려워지거나 변수의 전역 오염 등의 여러 문제**가 있었다.
+
+```html
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>This Week</title>
+    <script type="defer" src="./script1.js"></script>
+    <script type="defer" src="./script2.js"></script>
+  </head>
+  <body>
+  </body>
+</html>
+```
+
+```js
+///script1.js
+const me = "모승";
+
+
+///script2.js
+const me = "김모승"; //Parsing error: Identifier 'me' has already been declared
+```
+
+안타깝게도 과거엔 여러개의 자바스크립트 모듈을 적절히 연결하면서, 전역 오염을 해결하는 방법이 불가능에 가까웠다.(현대 Javascript의 module시스템을 지원함으로써 해결됨)
+그래서 브라우저에서는 필요한 기능별로 모듈을 분할하면서도 전역 오염을 해결하기위해 모듈 번들러를 활용했다.
+물론 어떻게든 활용해서 작은 수준의 웹에서는 구현이 가능하긴 했지만,
+인터넷 혁명 이후로 오프라인에서 많은 산업들이 정말 빠른속도로 온라인화 되기 시작했다. 그러면서 점차 웹은 점점 복잡해지고 유저의 경험또한 더 중요해지게 됐다.
+그러면서 더 많은 비즈니스가 화면에 담기고 웹의 복잡도또한 같이 증가했다.
+![](/images/modulebundlerevolution/01.png)
+
+> 90년대 당시 인터넷에 대한 블로그글
+ [Technology in the 90s
+Paving the way for a new millennium](https://archivesit.org.uk/blog/90s-revolution/)
+
+## 모듈 번들러
+그리하여, 모듈 번들러를 활용해 모듈처럼 구현하면서도 실제 런타임환경에서 사용할 자바스크립트를 브라우저가 알아들을 수 있도록 번들링하는 형태로 시작했다.
+실제 요즘 모듈 번들러가 하는 역할은 이것외에도 많지만 간단하게 모듈번들러가 어떻게 번들링해보는지 알아보겠다.
+### 종속성 그래프 매핑
+1. 우선 모든 파일의 관계 맵을 생성한다.(종속성 해결)
+2. 그리고 실제로 탐색하여 종속성의 종속성을 확인하고 각 파일에 고유한 ID를 부여한다.
+### 번들링
+위에서 생성된 종속석 그래프를 기반으로 여러 코드 파일을 통합하고 필요한 함수와 module.exports객체를 주입하고 브라우저가 성공적으로 로드할 수 있는 단일 실행 가능 번들을 반환한다.
+
+> 정리하면 모듈 번들러는 -> **모듈**(을)**번들**(링해주는)**러**(소프트웨어)
+
+
+# 2. Compiler
+2부 제목이 Compiler인데 왜 모듈 번들러 얘기를 하다가 Compiler가 나왔는지 의문일 수 있다. 하지만 위에서 모듈 번들러의 역할을 보면, 모듈형태로 작성한 개발자가 알아볼 수 있는 형태의 구조를 브라우저가 알아들을 수 있는 하나의 번들로 변환시켜준다. 
+그럼 이해를 돕기위해 Java에서 컴파일하는 과정을 간단하게 확인해보겠다.
+### In Java
+Java는 그 파일 자체로 실행할 수 없으며, .java소스 파일을 Java 컴파일러를 거쳐 바이트코드(.class)로 변환한다. 그리고 이 바이트코드를 JVM이 해석하여 해당 파일을 실행한다.
+### In Javascript
+공통점이 보이는데, 모듈 번들링하기전의 코드를 .java파일이라고 생각하고 모듈 번들러를 통해 나온 자바스크립트를 자바의 class파일이라고 생각하면 얼핏 비슷하기도 하다.(실제로는 자바스크립트도 실행단계에서 파싱을 통해 컴퓨터가 읽기 좋은 형태로 변환되고 한줄 씩 실행된다.)
+
+그리고 이 과정을 Compile한다고 하며 Compile해주는 소프트웨어를 Compiler라고 한다.
+
+> Compiler : 어떤 언어의 코드 전체를 다른 언어로 바꿔주는 소프트웨어
+ex: ``C -> Assembly``, ``vue -> HTML, CSS, JS``
+
+우리가 아는 프로그래밍언어는 사람이 알기 쉽도록 추상화해둔 코드이다.(고수준 언어)
+이를 실제로 컴퓨터가 알아듣도록 만들어줘야 하며 위처럼 고수준언어에서 기계가 알아들을 수 있는 코드로 변환시킨다.
+
+![](/images/modulebundlerevolution/02.png)
+## In Javascript
+현대 자바스크립트는(예를 들어 [V8엔진](https://v8.dev/)에서는) 컴파일링을 거치고 이를 실제 코드별로 인터프리팅하여 실행한다.
+자바스크립트코드 자체는 [동적언어](https://f-lab.kr/insight/programming-language-type-systems)이기 때문에 기본적인 파싱과 AST를 거치는것 외에는 다른 Compiler를 지원하는 언어처럼 최적화 처리를 진행하지 않는다.
+그래서 우리는 동적언어의 한계를 극복하기위해서 자바스크립트의 슈퍼셋 언어인 타입스크립트를 주로 활용한다. 
+타입스크립트 또한 Compiler 혹은 Transpiler라고 불린다.
+타입스크립트를 설명하며 Transpiler라는 말이 나왔으니 이것도 짚어보고 가려고 한다.
+
+
+## Transpiler VS Compiler
+> Transpiler : 소스 코드를 비슷한 수준의 추상화를 가진 다른 언어로 변환해주는 소프트웨어
+ex: ``Typescript -> Javascript``, ``ES6 -> ES5``
+
+Transpiler는 비슷한 수준의 추상화를 가진 언어로 변환해준다고 한다.
+그럼 다시 Compiler의 정의를 보면 ``어떤 언어의 코드 전체를 다른 언어로 바꿔주는 소프트웨어``이다.
+그렇기 때문에 집합 관점에서 본다면 Transpiler는 Compiler의 부분집합이라고 볼 수 있다.
+![](/images/modulebundlerevolution/03.png)
+
+
+## Webpack
+> Webpack은 모던 JavaScript 애플리케이션을 위한 **정적 모듈 번들러** 입니다
+
+[Webpack](https://webpack.kr/concepts/)의 정의에서 볼 수 있듯이 Javscript를 위한 **모듈 번들러**인데 **모듈 번들러**는 위에서 말했던 모듈로 분리돼있는 코드를 컴퓨터가 알아들을 수 있는 형태로 변환시켜준다.
+앞서 1장에서 말했던 이유때문에 모듈시스템이 도입됐고 모듈시스템을 잘 관리하기 위한 도구가 필요했다. 그래서 모듈 번들러라는 도구가 나왔다.
+이 도구는 우리가 해결하기 번거로운 문제인 모듈을 브라우저가 이해할 수 있는 형태인 하나의 파일로(번들링)해준다.
+
+Webpack은 다양한 기능이 있지만 그중에 loader를 활용해서 다양한 트랜스파일링을 지원하는데(css-loader, babel-loader) 이를 활용하면 트랜스파일링을 거친 후 번들링을 할 수 있다.
+svg나 Video같은 것을 웹팩이 이해하려면 Loader가 필요하다.
+
+## Babel
+웹이 점차 발전하고 최신 자바스크립트 버젼이 나왔다. 이전 버젼 브라우저를 사용중인 유저에게 서비스를 지원하기 위해 [Polyfill](https://developer.mozilla.org/en-US/docs/Glossary/Polyfill)을 지켜야한다.
+그리고 React가 점점 발전함에 따라 JSX문법이 보편화되기 시작한다.
+이를 해결하기 위해 Babel이 등장한다.
+Babel을 활용하여 JSX문법을 브라우저가 알아먹을 수 있는 JS로 변환하고, 하위호환성을 지키기 위해 최신문법을 이전 문법으로 변환시켜준다. (ES6 -> ES5(혹은 더 낮은 수준의 언어) 그래야 최대한 많은 유저에게 서비스를 제공할 수 있으므로)
+**그래서 Babel은 트랜스파일러다.**
+
+## 엄밀히 따지자면..
+하지만 엄밀히 따지자면 **모듈번들러는 컴파일러라고 보긴힘들다.**
+주로 컴파일러는 어떤 언어의 코드 전체를 다른 언어(**컴퓨터가 알아들을 수 있는 유사 형태**, Java로 따지면 JVM)로 바꿔주는 소프트웨어로 불리우는데 자바스크립트 모듈 번들러 그 자체로는 다시 통합해주는 역할일뿐 컴퓨터가 알아들을 수 있는 유사 형태라고 보긴 어렵기 때문이다.
+
+![](/images/modulebundlerevolution/04.png)
+
+## 그 외 모듈 번들러
+Parcel, Rollup과 같은 모듈 번들러도 존재한다.
+하지만 일반적으로 Webpack의 사용량이 많고 커뮤니티가 크기 때문에 많이 사용할뿐이지 특정상황에서 각 모듈 번들러를 사용하면 좋다.
+
+> [Parcel vs Rollup vs Webpack 비교](https://velog.io/@subin1224/Parcel-vs-Rollup-vs-Webpack-%EB%B9%84%EA%B5%90)
+
+## 문제아 자바스크립트
+이렇게 보니 자바스크립트 그 자체로는 정말 아무것도 못한다. 모듈 시스템을 도입하기 위해 모듈번들러를 도입해야하고 엔터프라이즈급 레벨에서 유지보수나 고급 어플리케이션을 만들기 위해 React나 NextJS와 같은 프레임워크를 사용할뿐더러 그 자체로는 동적언어라서 타입스크립트의 힘을 빌려 컴파일해야한다. (프레임워크를 사용하면 결국 브라우저가 알아들을 수 있는 형태로 재변환(빌드)가 필요하다.)
+그래서 이 문제아 자바스크립트를 사용하기위해서 우리는 이런 과정들을 거쳐서 서비스로서 사용할 수 있게 된다.
+
+
+# 3. 최신 모듈 번들러(feat. NextJS, React)
+## In React
+요즘 공식문서에서도 CRA를할때 Webpack보다는 Vite를 사용하도록 권장한다.
+Vite는 모듈번들러일까?
+
+> CRA는 Deprecate 됐다.
+[CRA breaks with React 19, and CRA needs deprecation notices](https://github.com/facebook/create-react-app/issues/17004)
+
+### Vite
+> [Vite](https://ko.vite.dev/guide/)는 미래의 웹 애플리케이션을 위한 강력하고 빠른 프런트엔드 빌드 툴입니다.
+
+Vite 공식홈페이지에서는 위처럼 설명하고 있다. Vite는 모듈번들러일까?
+
+Vite가 뜨거워졌던건 개발환경에서의 ESM을 이용해 HMR을 우아하게 제공해준다.
+1장에서 설명할때 모듈 시스템을 현대 Javascript에서 지원함으로써 해결된다고 했는데 그 형태가 **ESM(ESModule)이다.**
+대표적으로 ESM은 Top level await을 진행하고 동적 import가 불가능하므로 트리쉐이킹에 유리하다.(동적 import가 없으니 있는 그대로 코드를 빌드하고 트리쉐이킹 하면 됨)
+
+**HMR(Hot Module reload)은** 개발환경에서 적용되는 개념이고 변경사항이 발생했을때 새로고침하여 해당 변경사항을 반영해주는 기능이다.
+사실 이게 Vite를 활용하는 큰 이유중 하나인데 우선 그러기 위해 Webpack과 Vite의 dev환경에서 프로그램을 실행하는 방법을 알아야한다.
+
+**Webpack 개발환경은** 하나로 번들링해서 이를 개발환경에 띄우고 캐싱한다. 그리고 개발하다가 새로고침이 발생하면 캐싱을 활용할 수 있는 부분을 활용하지만 여전히 전체 모듈을 다시 컴파일한다.
+![](/images/modulebundlerevolution/05.png)
+
+
+하지만 **Vite는** 번들링을 하지않고 최신 브라우저에서 지원하는 Module을 활용하여 필요한 모듈만 다시 즉시 수정한테로 제공한다.
+![](/images/modulebundlerevolution/06.png)
+
+
+#### In Production
+하지만 말했듯이 Module기능은 최신 브라우저에서 잘 동작하기 Production환경에서 사용하기에는 무리가 있다. 왜냐하면 프로덕션 환경에서 가장 중요한 것 중 하나는 안정성이기 때문이다.
+그리고 Vite가 각광받은건 초기 개발 서버를 띄울때 필요한 부분만 하기에 빠르다는 것과, 거의 즉시 수정부분을 반영해준다는것에 있지 프로덕션환경에는 이런부분이 필요없다.
+그래서 Vite는 내부적으로 Rollup을 활용하여 Production환경에 제공한다.
+**개발모드를 기준으로하면 Vite는 모듈 번들러라고 할 수 있지만 Production환경에서 Vite는 Rollup을 기반하기에 모듈 번들러라고 말하긴 애매한 것 같다.**
+
+
+### ESBuild
+[ESBuild](https://github.com/evanw/esbuild)는 대부분의 Go언어로 작성된 번들러이다.
+위에서 말했단 parcel, rollup, webpack보다 압도적으로 번들링이 빠르다.
+
+![](/images/modulebundlerevolution/07.png)
+
+> 
+[토스에서 작성된 ESBuild를 활용해서 RN 빌드환경을 개선했던 글](https://toss.tech/article/react-native-2024)이 인상적이었다.
+
+## In NextJS
+NextJS에서는 15버젼을 기준으로 Dev에서는 Default로는 [SWC](https://swc.rs/) + Webpack을 사용하고 선택적으로 [--turbo ](https://nextjs.org/docs/app/api-reference/config/next-config-js/turbo)옵션을 사용하면 SWC + Turbo를 활용하며, Production환경에서는 SWC + Webpack을 사용한다.
+SWC는 트랜스파일러고 Webpack과 TurboPack은 모듈번들러다.
+그래서 TSX -> JS로 변환해주는 작업과 같은 트랜스파일링을 SWC를 적절히 활용하고, 번들링은 Webpack을 활용한다.
+
+### SWC
+> SWC 는 싱글스레드에서 Babel보다 20배 빠르고, 4코어 환경에서는 70배 빠르다.
+
+[SWC](https://swc.rs/)는 Rust로 만들어진 트랜스파일러다. 그래서 비교대상도 Babel인것이다.
+러스트 기반으로 최적화됐기에 Babel보다 더 빠르고 멀티코어 환경에서 그 성능이 더 드러난다.
+그리고 내부 최적화를 통해 빌드할때 소모하는 메모리 사용량도 더 적다.
+결론적으로 빌드시간도 빠르고 메모리도 덜 사용한다.
+
+![](/images/modulebundlerevolution/08.png)
+
+### SWC + Webpack vs Babel + Webpack
+그럼 사실 프로덕션 기준 NextJS는 모듈 번들러는 같고 트랜스파일러만 차이가 나는데 실제로 개발환경에서 초기 앱 시작 시간이 많이 차이나는걸 확인할 수 있다.
+NextJS환경에서 SWC + Webpack을 하면 내부 코드 스플리팅과 최적화를 통해 초기에 렌더링에 필요한만큼만 번들링한다.(그래서 페이지 라우팅할때마다 필요한걸 번들링해서 이동시간이 꽤나 오래걸린다.
+그래서 일반적인 Babel + Webpack으로 구성한 환경과 차이는 트랜스파일러의 성능차이와 Webpack으로 모든 파일을 번들링할지 필요한 부분만 할 지의 차이이다.
+> 그럼 궁금했던게 왜 개발환경에서 Vite를 쓰지 않았을까? 굳이 ESM을 활용하지 않으면서 말이다. 쓸 수 없었던걸까? 이부분은 추후 좀 더 알아보겠다.
+
+### TurboPack
+[TurboPack](https://nextjs-ko.org/docs/architecture/turbopack)은 Rust로 만들어진 모듈번들러다.
+그럼 이 TurboPack이 무엇인가를 한번 확인해보겠다.
+우리가 처음봤던 Webpack과 이름이 상당히 비슷하다.(pack자돌림)
+TurboPack은 실제로 Webpack을 대체하기위해서 나왔고 현재 개발 진행중이다.
+왜냐하면 NextJS에서 입장에서보면 SWC나 Webpack은 외부 의존성이다. 언제 지원을 중단할지 모르고 모든 상황에서 NextJS친화적으로 사용할 수 없다.
+그렇기 때문에 내부적으로 직접 모듈번들러 구축한다. 위에서 말했던 초기 시작을 빠르게 해주기 위해서 사용했던 Vite기능도 도입한다.
+하지만 결론적으로 보면 Webpack은 너무나도 커뮤니티가 크고 대체하기에는 많은 시간이 든다. 
+그래서 정말 NextJS에서 Production환경에서 TurboPack이 Webpack을 대체할지는 계속 지켜봐야할 것 같다.
+
+> 위 TurboPack링크를 클릭해보면 아직 지원하지 않는 기능이 많을뿐더러, PNP를 지원할 계획이 없다고한다.(눈감아 Yarn berryㅠㅠ) [PNP 적용해달라는 Issue](https://github.com/vercel/next.js/issues/42651)
+
+## 빌드 했습니다.
+그래서 결론적으로 우리는 Javascript를 더 잘 활용하기 위해서 모듈 번들러, 트랜스파일러를 활용한다.
+우리가 ```{packageManager} build```한다는것은 굉장히 복잡한 과정을 포함한다.
+나는 과정이 복잡해질 수 밖에 없다고 생각한다. 웹은 굉장히 빠른속도로 성장했고, 현재진행형이다. 빠르게 성장하는 소프트웨어는 필연적으로 아키텍처가 바뀌거나 하는 등 변화해야한다. 그래야 살아남을 수 있기 때문에.

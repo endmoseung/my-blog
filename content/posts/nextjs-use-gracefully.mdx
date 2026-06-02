@@ -1,0 +1,250 @@
+---
+title: "NextJS 우아하게 사용하기"
+date: "2024-10-10"
+excerpt: "NextJS를 잘 사용하기 위해 고민했던 제 경험과 지식들을 공유합니다."
+tags: ["AWSKRUG", "nextjs"]
+featured: false
+source: "https://velog.io/@endmoseung/nextjs-use-gracefully"
+---
+
+> 이번글은 [AWSKRUG](https://awskrug.github.io/) 프론트엔드 소모임에서 발표했던 [NextJS 우아하게 사용하기](https://docs.google.com/presentation/d/1rdBiJxIT8OXqJPmXaheLS8HzeFF6TuBCI-H8vqQIcA0/edit?usp=sharing)발표를 바탕으로 조금 더 많은 얘기를 공유하고자 작성합니다.
+
+# 1. Why SSR
+
+> 사실 이 SSR을 하기 이전 역사에 대해서 설명드리고 싶었지만 제가 직접 경험해본게 아니라 간단하게만 설명드렸습니다.
+
+## 고전적인 SSR
+
+웹에서 렌더링 흐름에 대해서 먼저 공유드리려고합니다.
+이때는 **웹의 목적이 정보를 보여주는것**이기에 동적인 기능은 잘 없었고 SSR만으로도 충분했습니다.
+![](/images/nextjs-use-gracefully/01.png)
+
+다만 이건 문제가 있었습니다. 예를들어 한 페이지에 여러 데이터를 사용해야해서 병목이 생기면 해당 병목이 해결돼야 화면을 받아 볼 수 있었습니다.
+## CSR
+이후 많은 도메인들이 점차 웹으로 넘어오고 **웹은 점차 복잡한 일**들을 하게 됐습니다.
+웹은 화면에 문서를 보여주는것에서 하나의 어플리케이션처럼 서비스 하게 됐고 자연스럽게 화면에서 유저의 복잡한 상태를 관리해야 했으며 고수준의 UX를 제공해야했습니다. 기존의 SSR로는 이 문제가 해결되지 않기에 유저의 기기를 이용해 렌더링하는 CSR라이브러리의 사용이 늘어나 그 중 React는 유례없는 전성기를 맞이합니다.
+하지만 CSR은 SEO에 불리하다거나 필연적으로 발생할 수 밖에없는 로딩상태가 있고, 유저의 기기나 인터넷 환경에 따라 렌더링 속도가 달라지는 문제가 발생합니다.
+![](/images/nextjs-use-gracefully/02.png)
+
+## Hybrid SSR
+그래서 기존의 CSR과 SSR을 적절히 조합해 고급 웹 어플리케이션을 개발할 수 있는 **Hybrid SSR** 프레임워크들이 나오게 됐습니다.
+하지만 SSR을 적절히 사용한다고 해도 병목에 대한 문제는 여전히 남아있기에 NextJS라는 프레임워크는 이를 React의 Suspense와 HTML Streaming 기법(Streaming SSR)을 이용해 해결합니다.
+그래서 현대의 Hybrid SSR은 과거의 SSR의 문제점을 해결하고 CSR을 필요에 따라 사용해 **사용성을 증가**시키게 됩니다.
+또한 최신 프레임워크들은 static하게 화면들을 생성하는 SSG(Static Site Generation)도 제공합니다.
+
+> 
+- 프론트엔드의 역사에 대해서 쉽고 재밌게 설명해준 글이 있어 혹시나 이전 프론트 생태계가 더 궁금하신분들에게 추천드립니다.
+[프론트엔드 역사와 미래, 업무 분야 ... 그리고 잘하는 프론트엔드 개발자란?](https://velog.io/@teo/frontend)
+
+# 2. Why NextJS
+SSR과 CSR을 적절히 사용하는것이 중요하고 StreamingSSR이 위 문제들을 해결해주는것은 알겠는데 우리는 **왜 NextJS를 사용해야 하는지** 의문이 생길 수 있습니다.
+그래서 저는 요즘 가장 많이 사용하는 Hybrid SSR 프레임워크들에 대해서 기능 제공 여부, NPM 다운로드 횟수를 찾아봤습니다.
+많은 기능들을 제공할수록 개발자는 필요에 따라 더 쉽고 빠르게 많은 기능들을 제공할 수 있고 NPM 다운로드 횟수가 많을수록 더 많은 커뮤니티가 있어서입니다.
+총 3개의 프레임워크를 비교했습니다. ``NextJS`` ``Remix`` ``SvelteKit``
+
+![](/images/nextjs-use-gracefully/03.png)
+![](/images/nextjs-use-gracefully/04.png)
+
+
+**NextJS는 세 프레임워크 중 가장 많은 기능을 제공하며 사용량도 제일 많아** 개발 경험과 커뮤니티의 수혜를 가장 많이 받을 수 있습니다.
+## NextJS를 사용하는 회사
+그리고 저는 한가지 더 지표를 확인하기 위해 현재 많은 사람들이 사용하는 원티드라는 채용플랫폼에서 인기 Top20 회사들 중 NextJS를 사용하는 회사들이 몇개인지 확인한 결과 **20곳중 9곳 45퍼센트가 사용중에 있습니다.**
+물론 이는 모수가 작기에 신뢰성은 좀 떨어지지만 그만큼 많은 회사들이 NextJS를 사용하는걸 알 수 있습니다.
+
+> 
+[프레임워크 별 기능 비교](https://bejamas.io/compare/nextjs-vs-remix-vs-sveltekit)
+[프레임워크 별 NPM 비교](https://npmtrends.com/@remix-run/node-vs-@sveltejs/kit-vs-next)
+
+# 3. NextJS 톺아보기
+Hybrid SSR을 사용해야하는 이유와 NextJS에 대해서 알게됐으니 그럼 실제 내부 구현과 제 경험들을 공유하려 합니다. 
+## Route Group
+[Route Group](https://nextjs.org/docs/app/building-your-application/routing/route-groups)은 이름에서 유추하면 Route를 묶어서(Group) 뭔가를 할 것 같습니다.
+라우트그룹은 **폴더 그룹을 나누고 이를 URL에 영향 안주는 방식으로 추상화 가능한 라우팅 기능**입니다.
+이를 말로만 설명하면 이해가 힘들기에 한가지 가정을 해보겠습니다. 저희는 프론트엔드 개발자고 백오피스 개발을 해야합니다. 그리고 두가지의 요구사항이 있습니다.
+- 로그인 전과 후에 레이아웃이 달라져야합니다.
+- 페이지는 로그인 상태와 권한에 따라 접근이 불가능합니다.
+
+이를 React로 개발하면 아래 사진과 같은 구조를 가질것입니다.
+
+![](/images/nextjs-use-gracefully/05.png)
+
+이는 컨벤션만 잘 이해하면 좋은 구조이긴 하지만 페이지와 레이아웃이 분산되있기에 한번에 이해하기 어려울 수 있습니다.
+이런 문제를 NextJS 해결하기위해 Route Group 기능을 제공합니다.
+위 구조를 보다 간단하고 우아하게 해결하기 위해 Route Group은 폴더명에 ``()``를 이용해서 개발할 수 있습니다.
+![](/images/nextjs-use-gracefully/06.png)
+이렇게 구현된 각 Route Group은 각각의 Layout과 Loading, Error, Default 상태를 모두 가질수 있으며 **보다 선언적으로 관리**할 수 있습니다.
+
+## Server Action
+요즘 리액트에서 Server Action이 아니라 Server Function이라고 부른다는 화제의 그 기능입니다.
+[Server Action](https://nextjs.org/docs/app/building-your-application/data-fetching/server-actions-and-mutations)은 이름에서 유추할 수 있듯이 **서버에서 실행되는 비동기 함수**입니다.
+Server Action은 상단에 use server를 꼭 붙여줘야합니다. 그래야 빌드타임에 해당 부분을 특정하여 추후 런타임에 이를 확인할 수 있는데 이는 4장 Build에서 더 자세하게 확인할 수 있습니다.
+![](/images/nextjs-use-gracefully/07.png)
+Server Action의 장점은 다음과 같습니다.
+- Node에서만 실행할 수 있는 라이브러리를 실행하는것처럼 **브라우저환경에서 불가능한 action**을 할 수 있다.
+- **자바스크립트가 로드되지 않아도 실행 가능**하다.
+- 클라이언트에서 사용하는 **번들 사이즈를 줄일 수 있다.**
+
+이는 좀 더 자세하게 설명드리겠습니다.
+
+### 브라우저환경에서 불가능한 action 실행
+최근 회사에서 맡은 기능 중 데이터를 엑셀파일로 만들고 이 파일에 비밀번호를 걸어줘야 했습니다.
+엑셀파일을 만드는것까지는 브라우저환경에서 가능했으나 실제 파일을 만들고 후처리로 비밀번호를 걸어줘야하는 문제와 보안의 문제로 Node환경에서만 가능한 예시가 있었습니다.
+이를 해결하기 위해서 가장 간단한 방법은 서버개발자님에게 위임하는것입니다.
+다만 이를 처리하기 위해서 너무 많은 구체사항이 그대로 서버에 구현되어야하고 많이 사용되는 기능도 아니었습니다.
+그래서 이를 해결하기위해서 서버에 필요한 데이터들을 보내고 이를 가공해 엑셀로 만들며 비밀번호도 추가하고 이를 다시 응답으로 내려주도록 개발했습니다.
+이처럼 **브라우저환경에서는 할 수 없는일을 Server Action으로 해결**할 수 있습니다.
+
+### 자바스크립트가 로드되지 않아도 실행 가능
+기존 CSR에서 우리가 의도한 코드(자바스크립트)가 실행되려면 자바스크립트를 유저가 다운로드 받아야 그 이후 런타임에서 쓰여집니다.
+하지만 Server Action은 빌드타임에 정의하고 필요한 의존성을 활용해 요청을 받으면 실행할 뿐입니다.
+그래서 유저는 NextJS 서버로 http 요청과 그응답을 받기만 합니다.
+이는 유저가 자바스크립트를 모두 다운로드 받고 이를 **Hydration하는동안에도 Server Action을 실행할 수 있다**는 말과도 같습니다.
+
+**Hydration**
+![](/images/nextjs-use-gracefully/08.png)
+NextJS가 화면을 빠르게 보여준다는 장점은 있지만 역시 자바스크립트를 다운로드 받는동안 화면에서 인터랙션이 불가능한 문제는 여전히 있습니다.
+
+그래서 서버액션을 활용하면 빠르게 화면에서 실행해야하는 동작에 대해서 자바스크립트 다운로드 없이 가능합니다.
+### Server Action 동작원리
+Server Action을 실행하기 위해서는 상단에 ``use server``를 입력해야 빌드타임에 이를 결정한다고 설명드렸습니다.
+Server Action을 사용하는곳에서는 아래 사진처럼 따로 정의하지 않았지만 생기는 의문의 Input이 있습니다. 그리고 name에 해시값이 붙습니다.
+이처럼 빌드타임에 ``use server``를 실행하는곳에 값을 해시화하고 런타임에 해당 요청이들어오면 서버에서는 이 해시값을 기준으로 함수를 실행하고 응답을 내려주게 됩니다.
+![](/images/nextjs-use-gracefully/09.png)
+
+### RouteHandler vs Server Action
+서버에서 실행할 수 있는 NextJS API 중 RouteHandler가 있습니다. 이것은 실제 API 처럼 개발자가 정의해둔 endpoint로 요청을 보내면 응답을 받아오는것입니다. 하지만 둘의 사용법은 다릅니다. RouteHandler는 응답 header를 바꿀 수 있지만 Server Action은 불가능하며 각각 선언해야하는 위치도 다릅니다.
+자세한건 아래 사진을 참고 바랍니다.
+![](/images/nextjs-use-gracefully/10.png)
+
+## Image(jpg, png…)
+웹에서 이미지는 많은 정보를 들고있어 사용성이 높지만 그만큼 웹에서 성능적으로 가장 문제가 발생합니다.
+그래서 이를 최적화하기 위해서 NextJS는 [Image](https://nextjs.org/docs/app/api-reference/components/image) 컴포넌트를 이용해 이미지 최적화 기능을 제공합니다.
+NextJS Image는 크게 세가지 일을 합니다. 
+
+1. **이미지 최적화(런타임)**
+2. Layout Shift 방지
+3. Lazy loading과 Blur-up 사용성 개선
+그럼 저희는 NextJS Image가 아니면 어떻게 이미지를 최적화했을까요?
+
+### 이미지는 어떻게 최적화하나요?
+수많은 방법이 있지만 아마 다음과 같은 방법이 있을 것 같습니다.
+
+1. 자체적으로 최적화한 이미지 사용
+2. Webpack 모듈을 이용하여 이미지를 코드로 관리하면서 최적화
+3. 자체 이미지 최적화 플랫폼 구축
+
+모두 좋은 방법이긴 하지만 결코 쉬운 방법은 아닙니다. 그래서 간단하게 이런 문제들을 해결하고자 NextJS Image가 나왔습니다.
+NextJS Image는 무엇이고 이전엔 어떻게하는지 알아봤으니, **어떻게 이미지를 최적화하는지** 한번 알아보겠습니다.
+### Sharp vs Squoosh
+NextJS는 용도에 따라 sharp와 Squoosh라는 두개의 라이브러리를 사용합니다.
+Sharp는 C 기반 이미지 처리 라이브러리인 libvips를 사용하며, Node.js 환경에서는 C++ 네이티브 확장을 활용하여 고성능 이미지 처리를 제공합니다. 네이티브 모듈을 사용하기 때문에 운영체제별로 종속성관리가 필요할 수 있습니다. **즉 Sharp는 성능은 좋지만 사용성이 떨어집니다.**
+
+Squoosh는 WebAssembly를 사용하여 브라우저에서 고성능 이미지 처리를 구현한 웹 애플리케이션입니다. **Squossh는 Sharp에 비해서 성능은 좀 떨어지지만 브라우저기반으로 개발됐기에 설치가 거의 필요없습니다.**
+그래서 NextJS를 빌드하면 개발환경에서는 설치가 용이하기에 개발환경에서 디폴트로 사용되고, Sharp는 성능의 이점이 있기에 프로덕션환경에서 사용하라고 빌드시점에 warning을 띄웁니다.
+![](/images/nextjs-use-gracefully/11.png)
+### NextJS Image 절망편
+이때까지 NextJS Image가 모든 문제를 해결해줄 수 있는것처럼 말했지만 사실 모든 상황에 쓸 순 없습니다.
+아래 두가지 사진처럼 Next Server에 너무 많은 이미지 요청이 들어오거나 물리적으로 먼 서버에 대해서 이미지 최적화를 수행하는것은 좋은 방법은 아닙니다.
+![](/images/nextjs-use-gracefully/12.png)
+![](/images/nextjs-use-gracefully/13.png)
+
+### 정리
+
+- **개발환경에서는 Squoosh, 프로덕션에서는 Sharp**
+- Image는 런타임에 새로 만들고, 이후 **서버에서 캐싱됨**
+- 회사의 **상황에 맞게 **사용하기
+
+
+## Middleware
+서버를 한번이라도 개발하셨던 분들은 Middleware가 이미 익숙하실 수 있습니다.
+NextJS도 서버이고 [Middleware](https://nextjs.org/docs/app/building-your-application/routing/middleware) 기능을 제공합니다.
+Middleware는 요청이 성공하기 전 코드를 Run하고 응답을 수정합니다.
+그리고 수정된 응답을 유저에게 내려주며 이때는 header값도 바꿀 수 있습니다.
+![](/images/nextjs-use-gracefully/14.png)
+
+### 사용 예시
+미들웨어는 특히 사용예시가 없으면 이해가 힘들 수 있어 예시를 공유드리려 합니다.
+백오피스를 개발해야된다고 가정해보겠습니다.
+백오피스는 권한별로 페이지의 접근이 달라져야하며 권한이 없을 경우에는 접근을 막아야합니다.
+저는 이를 Middleware로 해결했습니다.
+Header에 Cookie를 담아서 서버에 요청을 보내면 이를 미들웨어에서 Auth Server로 검증 요청을 보냅니다. 만약 올바르지 못한 Token이면 응답 Header를 수정해서 [307응답](https://developer.mozilla.org/ko/docs/Web/HTTP/Status/307)과 함께 다시 login페이지나 홈페이지로 이동시킵니다.
+올바른 값이라면 원래 요청하고자 했던 페이지에 대한 파일들을 내려주게 됩니다.
+![](/images/nextjs-use-gracefully/15.png)
+이게 무슨 장점이 있는걸까요?
+백오피스를 React로 개발한다고 가정해보겠습니다.
+React로 개발한 결과물은 초기에 index.html을 다운받으며 html이 파싱되고 그 이후에 스크립트를 다운받게 됩니다. 이 스크립트가 다운로드되는동안 유저는 로딩상태에 있다가 자바스크립트가 다운로드 되고나서야 API 요청을 보낼것입니다. 그럼 앞서 Middleware로 처리한것보다 더 많은 시간이 소요될것입니다.
+또 권한에 대한 처리를 Server에서 처리하기때문에 보안에도 더 좋습니다. 왜냐하면 Auth Server의 엔드포인트도 숨길 수 있고 코드 자체도 숨길 수 있기 때문입니다.
+
+### 정리
+
+- Middleware는 **서버 요청전에 실행**
+- Middleware는 **클라이언트에서 실행하는것보다 속도가 더 빠름**
+- 서버에서 로직이 실행되기에 **보안에 더 유리**
+
+# 4. Build
+이제 거의 다 왔습니다. 앞서 Server Action에 대해서 설명드릴때 빌드타임에 결정된다고 했습니다.
+빌드타임에 서버에서 어떤 일을 해야할지가 포함됩니다.
+가령 제가 만들었던 Server Action, Middleware등 많은것들이 빌드타임에 결정됩니다. 그리고 이 코드들이 런타임에 서버에서 실행되어 응답을 내려주게 됩니다.
+
+아무런 설정하지 않은 빌드방식을 많이 얘기할 예정이라 이를 ``기존 빌드 방식``이라 명명하겠습니다.
+
+NextJS에서 빌드하면 크게 두 종류의 파일과 캐시 파일이 생성됩니다.
+클라이언트에서 실행될 Chunk화된 JS, CSS, 그 외 정적인 파일들(Static)이 여기에 포함됩니다.
+Chunk화된 JS는 어려운게 아니라 클라이언트에서 실행된 코드들을 잘게 나눈 결과물이고 React로 빌드할때 생기는 결과물과 똑같다고 생각하시면 될 것 같습니다. 이는 내부적으로 Webpack을 사용합니다.
+
+그리고 앞서 말씀드린 Server에서 실행해야 하는 코드들이 생깁니다.그리고 이때 이 Server에서 실행해야 하는 코드들의 의존성은 우리 앱의 node_modules를 참고합니다.
+![](/images/nextjs-use-gracefully/16.png)
+그리고 .next 폴더안에 제가 설명드렸던 파일들이 생깁니다.
+![](/images/nextjs-use-gracefully/17.png)
+
+## Standalone
+Standalone은 직역하면 혼자일어서는 즉 독립한다는 뜻입니다.
+NextJS는 ``기존 빌드 방식``의 문제점을 해결하기 위해 [StandAlone](https://nextjs.org/docs/app/api-reference/next-config-js/output)빌드 방식을 제공합니다.
+``기존 빌드 방식``은 두가지 문제점이 있습니다.
+
+- 서버 실행에 불필요한 코드들을 포함함
+- 도커로 이미지를 빌드하게 될경우 불필요한 코드들 때문에 시간과 크기가 커짐
+
+
+그래서 저는 ``기존 빌드 방식``에서 standAlone 방식으로 전환하면서 서버 구동에 필요한 Server크기를 1/4만큼 감소했고, 빌드시간은 140초 감소했으며, 서버 구동에 필요한 의존성크기는 647.5mb 감소했습니다.
+![](/images/nextjs-use-gracefully/18.png)
+
+### 사용법
+사용법은 매우 간단합니다. 아래 코드를 **next.config.js에 추가**해주면 되고 그럼 **.next폴더내에 standalone으로 빌드된 결과물이 생깁니다.**
+그리고 이 파일을 좀 더 자세히 보면 안에 자체적으로 .next폴더와 의존성을 가지고 있습니다. 
+네 맞습니다. standalone으로 빌드하면 자체적으로 서버를 돌릴 수 있는 최소한의 코드를 포함하게됩니다. 그리고 이 파일과 static폴더와 함께 server에 업로드하고 생성된 server.js파일을 실행하면 배포에 성공하게 됩니다.
+```
+//next.config.js
+module.exports = {
+  output: "standalone",
+};
+```
+![](/images/nextjs-use-gracefully/19.png)
+![](/images/nextjs-use-gracefully/20.png)
+
+
+# 5. 끝으로
+## Infra
+기존 CSR은 한번 빌드된 결과물을 내려줄 수 있는 웹서버를 구축만하면, 이후 개발자가 챙겨야 할 부분은 거의 없습니다.
+하지만 **NextJS는 서버입니다.**
+서버를 운영하기 위해선 트래픽이 늘어났을때 서버의 스케일을 관리할 전략도 필요하고, 서버가 현재 어떤 상태를 가지고 있고 서버에서 어떤 에러가 발생했는지에 대한 로깅과 모니터링도 필요하며, 배포전략도 달라집니다. 그리고 이는 서비스에 방문하는 유저가 많을수록 더 신중하고 관심을 가져야 한다고 생각합니다.
+Server Action과 같은 서버에서 핸들링되는 API들을 사용할땐 실제로 우리서비스에서 이 기능이 서버에 어떤 영향을 미칠지에 대해서도 생각이 필요합니다.
+그래서 NextJS를 사용하려면 프론트엔드를 다루면서 동시에 서버를 다루는것이기에 그만큼 많은것을 학습하고 관리해야할것이 더 많아진다고 생각합니다.
+**유저에게 제공되는 화면을 다루는 일이 프론트엔드 개발자가 할 일이라 생각하기에 NextJS를 다루고 Infra를 다뤄야하는건 필요하다고 생각합니다.**
+
+## 웹뷰
+웹뷰는 기민하게 유저에게 서비스를 제공할 수 있어서 많은 회사들에서 사용합니다.
+웹뷰의 단점이 뭘까요? 네이티브 앱은 앱스토어에서 한번 인스톨되면 더이상 다운로드가 필요없지만 웹뷰는 ``웹``이기에 웹을 렌더링하기 위해 필연적인 HTML, CSS, JS의 다운로드가 발생합니다.
+그리고 CSR로 개발하면 화면에 렌더링해야하는 시간도 필요합니다.
+그럼 사용자는 그만큼 화면에 서비스가 늦게 되기때문에 사용성도 저하되고 앱에 대한 신뢰성이 떨어질 수 있습니다.
+
+하지만 그런 단점은 SSR로 해결하면서 Streaming을 이용하여 SSR의 Hydration문제도 어느정도 보완할 수 있다면 저는 그 가치가 있다고 생각합니다.
+그래서 저는 **웹뷰를 구현할때 NextJS같은 HybridSSR 프레임워크가 사용성 때문에 거의 필수**라고 생각합니다.
+
+사실 이런것들을 몰라도 서비스를 만드는것 자체는 문제가 없습니다. 하지만 프론트엔드 개발자는 유저와 우리 서비스의 구현에 가장 맞닿아 있는 직군입니다.
+그렇기에 프론트엔드 개발자가 조금만 더 신경써서 유저 경험을 챙겨준다면 우리의 서비스를 사용하는 유저도 행복하지 않을까요?
+또한 빌드 시간을 줄여주면 같이 일하는 동료들도 행복하지 않을까요?
+
+> **블로그 내용에 사용된것들**
+- [NextJS 우아하게 사용하기 PPT](https://docs.google.com/presentation/d/1rdBiJxIT8OXqJPmXaheLS8HzeFF6TuBCI-H8vqQIcA0/edit?usp=sharing)
+- [코드 레포지토리](https://github.com/endmoseung/next-forms)

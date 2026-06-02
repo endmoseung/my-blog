@@ -1,0 +1,110 @@
+---
+title: "원치않는 도메인 이동 막기 (Protected Route)"
+date: "2022-08-23"
+excerpt: "이번에 개발하던 프로젝트에서 로그인 기능을 구현했고 하다보니, 토큰을 LocalStorage에 저장하고 그 정보로 서버와 통신하며 사용자의 값을 가져옵니다.근데 저희 프로젝트에서 사용자의 로그인이 꼭 필요한 기능이 있었고, 이때 로그인 페이지로 가게끔 해줘야 했다.그래"
+tags: ["리액트", "자바스크립트"]
+featured: false
+source: "https://velog.io/@endmoseung/원치않는-도메인-이동-막기Protected-Route"
+---
+
+>이번에 개발하던 프로젝트에서 로그인 기능을 구현했고 하다보니, 토큰을 LocalStorage에 저장하고 그 정보로 서버와 통신하며 사용자의 값을 가져왔다.
+근데 프로젝트에서 사용자의 로그인이 꼭 필요한 기능이 있었고, 이때 로그인 페이지로 가게끔 해줘야 했다.
+그래서 Protected Route개념을 도입했다.
+
+## 1 . Protected Route란?
+이름 그대로 route를 protect한다.
+쉽게 풀어서 말하면, 해당 페이지로 이동하기전에 조건을 명시해주고 이런 조건을 만족했을때 해당페이지로 이동가능하게, 조건을 만족못했다면 특정페이지로 돌아가게끔 해줄 수 있다.
+
+## 2 . 설정 방법
+우선 기존 routes 폴더에 route.jsx파일을 만들고 기존 방식처럼 했었다.
+이 방법이 궁금하다면 과거에 작성했던 이 글을 참조 바랍니다.
+
+> https://velog.io/@endmoseung/REACT-ROUTE%EB%9E%80 
+REACT ROUTER란?
+
+하지만 내가 사용한 Protected Route 방법에선 기존 route.jsx폴더에 더해 우리의 페이지에 대한 정보가 담긴 page.js, protectedRoute.jsx파일이 추가된다.
+
+우선 Page.js내에 기존에 담았던 모든 페이지들에 대한 정보에 더해 isPublic:boolean이라는 이 페이지가 모두가 열람할수 있는 페이지인지?에 대한 값을 넣어줬다.
+```
+const pages = [
+  { pathname: "/", element: <Main></Main>, isPublic: true },
+  {
+    pathname: "/:recipeId/detail",
+    element: <Detail></Detail>,
+    isPublic: true,
+  },
+  { pathname: "/search", element: <Search></Search>, isPublic: true },
+  { pathname: "/mypage", element: <MyPage></MyPage>, isPublic: false },
+  { pathname: "/Community", element: <Community></Community>, isPublic: true },
+  { pathname: "/frige", element: <Frige></Frige>, isPublic: false },
+  { pathname: "/myfrige", element: <MyFrige></MyFrige>, isPublic: true },
+  {
+    pathname: "/resultlist",
+    element: <ResultList></ResultList>,
+    isPublic: true,
+  },
+  { pathname: "/login", element: <Login></Login>, isPublic: true },
+  { pathname: "/signin", element: <SignIn></SignIn>, isPublic: true },
+];
+
+export default pages;
+```
+이제 기존 route.jsx에 routes안에 있던 Route들을 걷어주고 pages를 map()함수로 돌려준다.
+> https://frontend-jin.tistory.com/11 map함수 사용법
+
+```
+const RootRoute = () => {
+  const token = localStorage.getItem("token");
+  return (
+    <RouteWrapper>
+      <BrowserRouter basename={process.env.PUBLIC_URL}>
+        <ScrollToTop />
+        <Navigation></Navigation>
+        <Routes>
+          {pages.map((r) => {
+            const isAuthenticated = r.isPublic || token;
+            return (
+              <Route
+                key={r.pathname}
+                path={r.pathname}
+                element={
+                  <ProtectedRoute
+                    token={token}
+                    pathname={r.pathname}
+                    isAuthenticated={isAuthenticated}
+                  >
+                    {r.element}
+                  </ProtectedRoute>
+                }
+              />
+            );
+          })}
+        </Routes>
+      </BrowserRouter>
+    </RouteWrapper>
+  );
+};
+```
+token이라는 변수는 우리 페이지에 로그인 정보를 토대로 페이지를 이동시키게 하기위해 localStorage에서 가져왔고, isAuthenticated라는 인증 변수를 만들어줘서 해당페이지가 isPublic===true거나 token값이 있다면 true를 넘겨줄것이다.
+하지만 ,isPublic===false거나 token값이 존재하지 않으면 해당페이지로 이동하는게 아니라 특정 페이지로 이동하게끔 해줄것이다.
+
+## 3 . Protected Route
+이제 위에서 했던 값들로 페이지 이동조건을 걸어줄건데 ,내가 했던 프로젝트에서는 mypage, community, frige라는 페이지들이 로그인이 꼭 필요한 페이지였다.
+```
+const ProtectedRoute = ({ isAuthenticated, children,}) => {
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  return children;
+};
+```
+prop으로 받은 isAuthenticated값이 false면 로그인페이지로 이동하게끔 했다.
+![](https://im.ezgif.com/tmp/ezgif-1-beb8681d6b.gif)
+이런식으로 사용하면 후에 내가 로그인이 되있다면, 메인페이지말고 의미있는 페이지로 이동하게끔도 가능할거 같았다.
+
+## 4 . 후기(주관적 생각)
+원래는 해당 페이지들마다 페이지가 Mount됐을때 localstorage.setItem을 통해 토큰이 있다면 페이지내에 남고 아니라면 특정 페이지로 이동하게끔 했었는데 이는 실제 페이지로 이동하면서 재이동하기 떄문에 화면상 어색한것도 있었다. 
+하지만 Protected Route개념을 사용함으로써 해당페이지로 이동하기 전에 조건을 체크하기에 해당 페이지로는 이동을 하지 않는다.
+그래서 사용자도 어색함을 느끼지 않고, 성능적으로도 훨씬 뛰어난것같다.![](/images/원치않는-도메인-이동-막기Protected-Route/01.jpeg)

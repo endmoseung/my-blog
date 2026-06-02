@@ -1,0 +1,64 @@
+---
+title: "JS배우기 feat(indexOf,substring,to(Upper,Lower)Case"
+date: "2022-06-11"
+excerpt: "이전글에 이어서 코테공부(with Javascript)를 이어서 쓰려고 합니다.아래는 기본 정의입니다.string.indexOf(a,b) string에서 a라는 값을 제일 먼저 발견한것을 리턴한다, b에 number를 넣으면 b번쨰 숫자부터 찾는다.예를 들어 arr={"
+tags: ["JavaScript", "코딩테스트"]
+featured: false
+source: "https://velog.io/@endmoseung/JS배우기-featindexOfsubstringtoUpperLowerCase"
+---
+
+> 이전글에 이어서 코테공부(with Javascript)를 이어서 쓰려고 합니다.
+
+![](/images/JS배우기-featindexOfsubstringtoUpperLowerCase/01.png)
+
+## 1 . indexOf
+아래는 기본 정의입니다.
+![](/images/JS배우기-featindexOfsubstringtoUpperLowerCase/02.png)
+> string.indexOf(a,b) string에서 a라는 값을 제일 먼저 발견한것을 리턴한다, b에 number를 넣으면 b번쨰 숫자부터 찾는다.
+
+예를 들어 arr=&#123;ksekkset&#125;라는 객체에서 arr.indexOf(k,0)을 선언해주면 0이라는 number를 리턴하고 indexOf내에서 0을 2나 3을 선언해주면 3이라는 값이 나옵니다.
+문자열중 특별문자를 찾기위함, 중복문자를 제거할떄도 쓸 수 있습니다.
+```
+//중복되는 문자 제거
+      function solution(s) {
+        let answer = "";
+        for (i = 0; i < s.length; i++) {
+          if (s.indexOf(s[i]) === i) {
+            answer += s[i];
+          }
+        }
+        return answer;
+      }
+      console.log(solution("ksekkset")); 입력하세요
+```
+위는 indexOf를 사용해 중복되는 문자를 제거한 코딩이고 ksekkset에서 처음 만난 문자만 새로운 answer에 배정해줌으로써 완성됐습니다.
+
+## 2 . substring
+substring의 기본 정의입니다.
+![](/images/JS배우기-featindexOfsubstringtoUpperLowerCase/03.png)
+> // substring : string.substring(a,b) string의 a번 index부터 b번 index앞까지의 문자를 리턴 ,string.substr(a,b) : string의 a번 index부터 b개만큼 뽑아내라
+
+substring과 유사한 substr도 한번에 같이 설명하려고 합니다.
+예를 들어 substring은 arr=&#123;ksekkset&#125;가 있다 가정했을떄 arr.substring(0,3)은 0번index부터 3번index의 앞까지의 값을 리턴하고 위에서는 kse가 리턴될것입니다.
+substr은 a라는 index에서 시작되는건 같지만 b인자로 받은갯수만큼 값을 리턴하므로 arr.substr(0,3) 0번index부터 3개를 출력하므로 kse가 출력됩니다.
+
+## 3 . to(Upper,Lower)Case
+toUpperCase와 toLowerCase의 기본 정의입니다.
+![](/images/JS배우기-featindexOfsubstringtoUpperLowerCase/04.png)
+
+![](/images/JS배우기-featindexOfsubstringtoUpperLowerCase/05.png)
+
+간단하게 문자열을 대문자로,or 소문자로 변경해주는 method이고 moseung="HanSome"이라고 선언된 변수에서
+const changed =moseung.toUpperCase()해주면 changed는 HANDSOME이 될것이고 const changed = moseung.toLowerCase해주면 changed는 handsome이 될것입니다.
+여기서 toUpperCase와 toLowerCase를 다른방식으로 쓸 수 있는 방법이 있는데 그것은 바로~~ 아스키코드입니다.
+### 3-1. 아스키코드
+**아스키코드란 ?**
+> 아스키 코드는 1963년 미국 ANSI에서 표준화한 정보교환용 7비트 부호체계이다.  아스키코드에 대해서 더 자세히 알고싶으시면 아래 링크를 추천합니다.
+https://m.blog.naver.com/PostView.naver?isHttpsRedirect=true&blogId=diceworld&logNo=220175224345
+
+이런 아스키코드를 통해 어떻게 대문자 소문자로 바꾸는지 궁금하실텐대 바로 charCodeAt라는 method입니다.
+charCodeAt 기본 정의
+![](/images/JS배우기-featindexOfsubstringtoUpperLowerCase/06.png)
+
+아스키코드는 number이고 어떤 문자를 charCodeAt()해주면 number를 반환하는데 이떄 대문자는 65~90이고 소문자는 97~122번입니다.
+65의 A로부터 시작해 90의 Z로 마무리되고 97의 a로부터 시작해 122의 z로 마무리됩니다. 그래서 대문자를 소문자로 바꾸고 싶다면 위에서 나온 number에+32하는 로직을 만들어주고 소문자를 대문자로 바꾸고 싶다면 number에-32하는 로직을 만들어주면 될것입니다.

@@ -1,0 +1,207 @@
+---
+title: "html css 배워보기"
+date: "2023-11-24"
+excerpt: "이번에 웹은 1990년 hypertext라는 문서를 화면에 보여주기 위해서 등장했습니다. 이 문서를 만들기 위해 html(hypertext markup language)언어가 만들어졌습니다.미리 정의된 html 태그들로 문서에 마트업하면 해당 문서를 웹에서 볼 수 있었"
+tags: ["CSS", "html", "입문"]
+featured: false
+source: "https://velog.io/@endmoseung/html-css-배워보기"
+---
+
+> 이번에 좋은 기회로 지식을 공유하게 돼서 html css에 대해서 글을 작성하려고합니다.
+입문을 위한 글이며 추후 더 고도화된 버젼도 작성하려고 하니 많은 관심 부탁드립니다.
+
+
+## html 그게 뭔데?
+웹은 1990년 hypertext라는 문서를 화면에 보여주기 위해서 등장했습니다. 이 문서를 만들기 위해 html(hypertext markup language)언어가 만들어졌습니다.
+미리 정의된 html 태그들로 문서에 마트업하면 해당 문서를 웹에서 볼 수 있었습니다.
+```
+<strong style="padding: 30px; color: red">안녕 내 이름을 소개하지</strong>
+```
+![](/images/html-css-배워보기/01.png)
+
+위처럼 html에 직접 스타일링을 입력하는 방식을 inline-style이라고 합니다.
+
+### inline-style 지양하기
+위처럼 inline-style을 사용하는것은 지양되는 패턴인데 전지전능한 chatGPT의 답변으로 설명해보려합니다.
+> HTML에서 인라인 스타일을 지양하는 것은 여러 가지 이유로 권장됩니다:
+재사용성: 인라인 스타일은 웹 페이지의 **특정 요소에만 적용**되므로, 같은 스타일을 여러 요소에 적용하려면 **매번 동일한 스타일 코드를 작성**해야 합니다. 반면 CSS 클래스나 ID를 사용하면, 한 번 정의한 스타일을 여러 요소에 쉽게 적용할 수 있습니다.
+유지보수: 인라인 스타일은 HTML 코드 안에 섞여 있기 때문에, **스타일을 변경하거나 디버깅할 때 찾기 어렵고 수정하기 번거롭습니다**. 반면 CSS는 별도의 파일에 작성할 수 있어, 스타일 코드를 구조화하고 관리하기 편리합니다.
+특정성: CSS는 특정성(Specificity)이라는 규칙에 따라 스타일을 적용합니다. **인라인 스타일은 특정성이 가장 높기 때문에, 다른 CSS 선언을 재정의하는 데 어려움을 겪을 수 있습니다**. 이는 **의도치 않은 결과를 초래**하거나, !important 선언을 남발하는 나쁜 습관을 만들 수 있습니다.
+성능: 인라인 스타일은 HTML 파일의 크기를 늘리기 때문에, **웹 페이지의 로딩 속도에 영향을 줄 수 있습니다**. 특히 큰 웹 사이트에서는 이러한 영향이 누적되어 심각한 성능 문제를 초래할 수 있습니다.
+따라서, 위와 같은 이유로 인라인 스타일보다는 **외부 CSS 파일이나 style 태그를 사용하여 스타일을 작성하는 것이 권장**됩니다.
+
+맞습니다. 우리는 개발자이고 내가 작성한 코드를 다른 누군가 보는일이 많습니다. 하지만 우리가 위처럼 inline-style로 작성하게 된다면 작성한 순간에는 기억할 수 있을지 몰라도 3달이 지나거나 혹은 누가 봤을때는 이해하기 힘든 코드가 될것입니다.😭
+
+## css가 만들어지다.
+HTML에 스타일만 분리해서 반복적인 부분을 일괄적으로 적용해내는 css라는 방법이 만들어집니다.
+앞으로 개발자를 하다보면 추상화라는 말을 1만번 이상을 들을 것 같은데 css로 인해 개발자는 적절한 추상화로 개발 경험이 올라갑니다.
+웹 페이지의 구조(HTML)와 스타일링(CSS)을 분리할 수 있게 해줍니다. 이는 웹 개발의 기본 원칙 중 하나인 '관심사의 분리([Separation of Concerns](https://velog.io/@seanlion/soc1))'를 반영한 것이며, 이를 통해 코드의 재사용성과 유지보수성이 향상됩니다.
+```
+//index.hmtl
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta />
+    <link rel="stylesheet" href="style.css" />
+    <title>Document</title>
+  </head>
+  <body>
+    <strong>안녕 내 이름을 소개하지</strong>
+    <strong>나는 모승이야</strong>
+    <strong>넌 누구니</strong>
+  </body>
+</html>
+
+//style.css
+strong {
+  color: red;
+  font-size: 30px;
+}
+
+```
+css 를 html에서 사용하기위해서는 link태그를 이용하여 내가 만들어둔 css파일을 연결(link)해줍니다.
+그리고 해당 내용을 확인하기 위해 [vscode extension liveserver](https://stajun.tistory.com/entry/Visual-Studio-Code-%EB%9D%BC%EC%9D%B4%EB%B8%8C%EC%84%9C%EB%B2%84Live-Server-%EC%84%A4%EC%A0%95%ED%95%98%EA%B8%B0)를 활용해줍니다.
+
+![](/images/html-css-배워보기/02.gif)
+
+liveserver를 이용하여 내가 markup한 html파일을 로컬환경에서 띄워서 style.css가 입혀진것을 확인할 수 있다.
+
+> 로컬 환경이란 ?
+개발자의 로컬 환경이란, **개발자가 코드를 작성하고 테스트하기 위해 사용하는 개인 컴퓨터나 시스템**을 의미합니다. 이 환경은 일반적으로 개발자가 사용하는 운영 체제, 설치된 소프트웨어, 개발 도구, 프로그래밍 언어, 데이터베이스 시스템 등으로 구성됩니다.
+
+### css 중첩
+위처럼 간단한 마크업이면 괜찮겠지만 1천줄 이상되는 html코드에 해당 스타일을 입히기 위한 css파일이 존재한다면 어떻게 관리해야할까요?
+```
+	<ul>
+      <li>나는 리스트야</li>
+      <li>나도 리스트야</li>
+      <li>나는 조금 특별한 리스트야</li>
+    </ul>
+```
+
+이 중에서 모든 li는 특별한 리스트의 폰트 색깔빼고는 모두 같은 스타일링을 적용해야합니다. 이를 위해 css 중첩을 사용합니다. 내가 모두 똑같은 리스트의 스타일링을 정해주고 특별한 리스트에 css를 입혀줍닏.
+
+```
+//index.html
+<ul class="lists">
+      <li class="imlist">나는 리스트야</li>
+      <li class="imlist">나도 리스트야</li>
+      <li class="imlist special">나는 조금 특별한 리스트야</li>
+    </ul>
+    
+//style.css
+
+.lists {
+  .imlist {
+    font-size: 30px;
+    color: red;
+  }
+  .special {
+    color: blue;
+    font-weight: 800;
+  }
+}
+
+```
+![](/images/html-css-배워보기/03.png)
+
+그런데 눈치 빠른사람이면 알텐데 위의 special과 imlist의 순서를 변경하면 어떻게 될까요 ?
+한번 혼자 생각해봐요 잠깐.
+
+![](/images/html-css-배워보기/04.png)
+
+### Specificity(명시도)
+위를 해결하기위해 css 명시도의 개념이 나왔습니다.
+명시도를 이용하여 우선순위가 다르게 적용할 수 있도록 설계할 수 있는데요.
+```
+.imlist.special {
+    color: blue;
+    font-weight: 800;
+  }
+  .imlist {
+    font-size: 30px;
+    color: red;
+  }
+```
+
+다음처럼 special한 태그에 우선순위를 높입니다.
+![](/images/html-css-배워보기/05.png)
+
+이렇게 우선순위를 높일 수 있지만 그래도 왠만하면 코드는 위에서 아래로 작성해주는것이 가독성에 유리하기 때문에 명시도를 높이더라도 코드는 꼭 위에서 아래로 topdown방식으로 작성해주시는것이 좋습니다.
+
+제가 공부할때 이 방법으로 css를 입혔는데 이는 매우 좋지 않은 가독성을 보여줍니다. 아래와 같은 스타일링 코드가 한페이지에 500줄 존재합니다 ..
+
+```
+header .contentsbox .contents .gamemode{
+    color: var(--gamemodefont-color);
+}
+header .downloadbox{
+    background-color: var(--newanddown-color);
+    display: flex;
+    justify-content: center;
+    
+}
+header .downloadbox .download{
+    min-width: 1080px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    color: black;
+    font-size: 15px;
+}
+header .downloadbox .download a{
+
+    height: 100%;
+}
+header .designbox{
+    background-color: var(--design-color);
+    display: flex;
+    justify-content: center;
+}
+```
+
+
+### 시멘틱
+웹이 점점 커지고 코드가 방대해짐에 따라서 시멘틱이라는것이 중요해졌습니다.
+시맨틱이란 **시각적으로 어떻게 보일지가 아니라 의미에 중점**을 두는것입니다. 그리고 시멘틱태그를 잘 지킨 코드는 컨텐츠에 좋은 의미를 부여하기 때문에 검색결과를 얻는 **[SEO(Search Engine Optimization 검색 엔진 최적화)](https://ko.wix.com/blog/post/what-is-seo)에서도 유리**합니다.
+또한 이는 더 좋은 코드를 작성하는데 도움을 줍니다.
+우리는 특별한 색깔을 파란색이라고 정의한다고 예를들겠습니다. 하지만 누군가는 다음처럼 파란색이라는 사실 그 자체를 사용하려고합니다.
+```
+.special{
+color:blue;
+}
+
+.blue{
+color:blue;
+}
+```
+똑같은 color 한줄이지만 special이라는 이름은 해당 css가 특별하다는 의미를 코드를 읽는 사람에게 전달해주고 blue라는 이름은 해당 css가 파랗다는 의미를 전달해줍니다.
+이는 각각의 장단점이 있지만 일반적으로 고수준의 언어에서 코드의 흐름을 읽고 **재사용성에 유리한것**은 선언적(시멘틱한)코드이다.
+> [명령형 vs 선언형 프로그래밍](https://iborymagic.tistory.com/73)
+
+
+왜 코드의 흐름을 읽는지 유리하냐면 해당 코드를 읽었을때 special하다는 구현부만 알아도 돼고 어떻게 특별한지는 필요할때 읽으면 된다.
+
+### BEM(Block__Element--Modifier 블럭 요소 수정자)
+2013년 CSS 이름짓기 컨벤션으로 기존 CSS구조를 표현할 수 있는 방법이 등장했다.
+```
+	<div class="item">
+      <div class="item__header"></div>
+      <div class="item__body"></div>
+      <div class="item__footer"></div>
+    </div>
+```
+위처럼 간결하고 직관적이어서 배우기 쉬운 구조입니다. 그리고 컨벤션이 단순해서 쉽게 기억할 수 잇습니다.
+아래에서 Block이 뭔지 Element가 뭔지 Modifier가 뭔지 좀 더 자세하기 BEM에 대해서 알 수 있습니다:)
+
+[BEM 방식](https://nykim.work/15)
+
+
+
+### 끝으로
+CSS의 입문을 잘 설명하기 위해 쓴 글이지만 CSS 자체가 내용이 너무나 방대하기 때문에 후에 더 글을 다루려고 합니다.
+그리고 [CSS 역사로 알아보는 CSS가 어려워진 이유](https://velog.io/@teo/css-history-1#jquery-ajax%EC%9D%98-%EB%B3%B4%ED%8E%B8%ED%99%94-2008)를 꼭 읽어보는것을 추천합니다.
+내용이 조금 길긴하지만 어떻게 css가 등장했고 현대프론트엔드 개발에서 css를 사용하는 방법까지 알려주기에 정말 많은 도움이 됩니다.:)
+감사합니다.

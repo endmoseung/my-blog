@@ -1,0 +1,291 @@
+---
+title: "예측가능한 상태관리 Redux with React"
+date: "2022-09-26"
+excerpt: "이번 프로젝트에서 상태관리를 Redux로 하게됐고 이에 Redux간단 소개, 사용법, 실제 적용, 느낀점순으로 정리하려 합니다. 잘못된 내용이 있거나 수정해야되는 부분이 있다면 언제든 댓글로 피드백 부탁드리겠습니다. :)제목에도 적어놨듯이 Reudx는 예측가능한 상태관"
+tags: ["리덕스", "리액트"]
+featured: false
+source: "https://velog.io/@endmoseung/예측가능한-상태관리-Redux-with-React"
+---
+
+> 이번 프로젝트에서 상태관리를 Redux로 하게됐고 이에 Redux간단 소개, 사용법, 실제 적용, 느낀점순으로 정리하려 합니다. 잘못된 내용이 있거나 수정해야되는 부분이 있다면 언제든 댓글로 피드백 부탁드리겠습니다. :)
+
+## 1 . Redux란 ?
+제목에도 적어놨듯이 Reudx는 예측가능한 상태관리를 위해서 나온 라이브러리입니다.
+리덕스 공식 문서에는 다음과같이 나와 있습니다.
+> Redux는 자바스크립트 앱을 위한 예측 가능한 상태 컨테이너입니다.
+Redux는 여러분이 일관적으로 동작하고, 서로 다른 환경(서버, 클라이언트, 네이티브)에서 작동하고, 테스트하기 쉬운 앱을 작성하도록 도와줍니다. 여기에 더해서 시간여행형 디버거와 결합된 실시간 코드 수정과 같은 훌륭한 개발자 경험을 제공합니다.
+
+
+우선 프론트엔드 초기에 상태관리는 MVC패턴이 유행했습니다.
+https://m.blog.naver.com/jhc9639/220967034588 MVC패턴이란?
+View는 기본적으로 Model에게 접근해서 데이터를 받아오지만, 때로는 Controller에서 Model을 거치지 않고 바로 View를 변화시키기도 합니다. 즉 양방향 통신이 발생했고 이는 상태들이 예측이 어려워진다는 단점이 발생했습니다.  예측이 어려워진다는 말은 유지 보수에 힘들고 이는 프로젝트가 커질수록 더 힘들어진다는걸 의미했습니다.
+
+> 그래서 나왔다 FLUX패턴 두둥등장
+
+![](/images/예측가능한-상태관리-Redux-with-React/01.png)
+
+
+그래서 이런 문제를 해결하고자 FLUX라는 디자인 패턴이 나왔습니다
+https://velog.io/@andy0011/Flux-%ED%8C%A8%ED%84%B4%EC%9D%B4%EB%9E%80 FLUX패턴이란?
+이처럼 FLUX패턴이 등장함으로써 상태는 오직 Action에서 dispatch를 거쳐서만 변경이 가능했고 이는 예측가능한 상태관리가 가능하다는 큰 장점이 있었습니다.
+
+하지만 FLUX는 디자인패턴일 뿐이고 실제로 이를 동작하게끔 해주는 라이브러리가 필요했고 여러 라이브러리들이 나왔는데 거기서 제일 많이쓰는게 MOBX와 REDUX가 있습니다. 그중에서도 개발자들이 제일 많이쓰는 REDUX에 대해서 소개하려고 이제 실제로 적용해보며 알아보겠습니다.
+
+## 2 . Redux With React
+그래서 Reudx는 FLUX패턴을 적용한 라이브러리고 우리는 현재 사람들이 가장 많이쓰는 자바스크립트 라이브러리 React에서 Redux를 사용하는법을 소개하려고 합니다.
+사용법 이전에 Redux의 3가지 기본원칙에 대해서 소개하겠습니다
+> 1. Single source of truth
+리덕스는 하나의 객체(store)안에 트리구조로 구성되고 이에 접근해서 사용가능합니다.
+2. State is read-only
+State은 읽기만 가능하고 Action객체를 Dispatch를 통해서 전달하는 방법외에는 절대 수정이 불가능합니다. 
+3. Changes are made with pure function
+위를 통해 Dispatch로 전달된 Action을통해 어떤 상태를 변경할건지 알았으면 Reducer라는 순수함수로 실제 상태를 변경시킵니다.
+Reducer는 이전 state 값과, action 객체를 인자로 받아서 새로운 state를 리턴하는 순수 함수입니다.
+여기서 주목해야 할 점은 새로운 state를 리턴한다는 점입니다. 즉, 기존의 state 객체를 수정하는 것이 아니라, 기존의 state 객체를 이용해서 새로운 state 객체를 만들어내는식으로 동작한다는 점입니다.
+
+## 3 . Redux 리액트에서 적용하기
+
+이제 패키지를 설치해주는데 이번에 비동기 관리를 위한 Redux thunk와 현재상태를 콘솔에서 확인이 가능한 tool과 logger를 같이 설치해주겠습니다.
+```
+npm install redux react-redux redux-devtools-extension redux-logger reudx-thunk
+
+```
+우선 Redux를 위한 폴더를 src폴더에 생성해줍니다.
+![](/images/예측가능한-상태관리-Redux-with-React/02.png)
+위에서도 말했듯이 Redux는 하나의 Store객체안에 모든걸 정의해두고 사용한다 했으므로 store를 하나 만들어줍니다.
+
+
+```
+//redux/store.js
+import { applyMiddleware, createStore } from 'redux';
+import rootReducer from './modules';
+import { composeWithDevTools } from 'redux-devtools-extension';
+import thunk from 'redux-thunk';
+import logger from 'redux-logger';
+
+const store = createStore(
+  rootReducer,
+  composeWithDevTools(applyMiddleware(thunk, logger))
+);
+
+export default store;
+
+```
+
+이제 createStore안에 들어갈 rootReducer를 modules폴더 안에 생성해주는데 하나의 index파일에서 모든 Reducer들을 관리해주기 위해 다음과index.js파일을 만들었고 다음과 같이 적어줍니다.
+```
+//  redux/modules/index.js
+import { combineReducers } from 'redux';
+import { commentsReducer } from './comments';
+import { paginationReducer } from './pagination';
+import { paginationCommentsReducer } from './paginationComments';
+import { singleCommentReducer } from './singleComment';
+
+const rootReducer = combineReducers({
+  comments: commentsReducer,
+  singleComment: singleCommentReducer,
+  pagination: paginationReducer,
+  paginationComments: paginationCommentsReducer,
+});
+
+export default rootReducer; 
+// combineReducer는 이름 그대로 모든 Reducer들을 조합해서 하나로 만들어준다고 생각하면 되겠습니다.
+combineReducer함수 안에 있는 객체의 key값은 본인이 원하는 이름으로 설정 가능하고
+value들은 실제 본인이 상태로 관리할 모듈reducer을 import해서 적어줍니다.
+
+```
+
+이제 모든 준비는 끝났고 우리의 루트파일 index.js로가서 우리가 렌더링할 App을 Provider로 감싸고 store를 prop으로 전달합니다.
+```
+//index.js
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { Provider } from 'react-redux';
+import App from './App';
+import store from './redux/store';
+
+const container = document.getElementById('root');
+const root = createRoot(container);
+
+root.render(
+  <React.StrictMode>
+    <Provider store={store}>
+      <App />
+    </Provider>
+  </React.StrictMode>
+);
+
+```
+이제 우리가 실제 관리할 상태를 만들어봅니다. 저는 페이지네이션을 관리할 상태가 필요했고 modules폴더내에 pagination.js파일을 만들어줬습니다.
+위에서 우리는 상태를 바꾸기위해선 dispatch에 전달할 action이 있어야하고 실제 상태를 바꿔주는 reducer함수가 필요하다고 했습니다.
+이는 어떤 상태를 바꾸기위해선 action,dispatch,reducer는 필수라는 뜻이고 이를 한파일내에 모두정의하는 Ducks패턴을 이용했습니다.
+https://dinn.github.io/web/redux-ducks-pattern/ ducks패턴이란?
+
+```
+//Pagination.js
+const PAGINATION = 'pagination/paginationNumber';
+
+export const paginationAction = (page) => {
+  return {
+    type: PAGINATION,
+    page,
+  };
+};
+
+const initialState = 1;
+
+export const paginationReducer = (state = initialState, action) => {
+  if (action.type === PAGINATION) {
+    return action.page;
+  }
+
+  return state;
+};
+```
+
+위에 보면 paginationAction이라는 함수가 있습니다. 이는 Action Creator라 불리고 Action Creator는 Action을 생성하는 함수입니다. 매번 액션 객체를 손수 작성하는 것은 중복이며, 번거롭고, 실수할 여지가 많은 작업이기에 Action Creator를 통해서 생성하는 것을 Redux에서 권장합니다.
+
+이제 실제 Reducer에서 인자로 2개를 받는데, intialState과 실제 action함수를 받는데 initialState는 이 상태의 초기값을 의미하며 페이지네이션에서 초기상태는 1페이지이므로 저는 1로 정의해뒀고 실제 어떤 데이터들로 구성돼있다면 객체로 선언해서 안에 key와 value들을 선언해주는게 좋습니다.
+
+Reducer안에 함수에서 액션타입을 받는 로직은 switch문으로 하던 if문으로 하던 상관없고 해당하는 Action을 받아서 실제로직을 수행하고 상태를 바꿔서 return합니다. 만약 해당하는 Action이 없다면 코드 최하단부로와서 초기상태가 그대로 return될것입니다.
+
+그럼 저희는 실제 상태를 바꿔줄 action, reducer를 모두 정의했습니다. 이제 실제로 우리의 view를 바꿔보도록 하겠습니다.
+
+위에서 dispatch에 action을 담아줘서 reducer함수로 상태를 변경한다고 했는데 이 dispatch를 react-redux에서 제공하는 useDispatch를 사용하겠습니다.
+그리고 우리가 실제로 상태를 가져와서 뷰로직을 작성해야하는데 store에 담긴 모든 상태를 가져오면 비효율적으로 우리가 필요한 부분의 상태만 가져오는 useSelector라는 hook을 사용하겠습니다.
+```
+//PageList.jsx
+const dispatch = useDispatch();
+const comments = useSelector((state) => state.comments.data); 
+const handlePagination = (page) => {
+    dispatch(paginationAction(page));
+    dispatch(getPaginationThunk(page));
+  };
+
+//위처럼 우리가 rootReducer에 정의했던 이름으로 접근해서 상태를 사용합니다.
+getPaginationThunk는 페이지가 바뀌면 해당 목록들에 대한 view도 바껴야해서 추가로
+작성한 부분이고아래에서 추가 설명하겠습니다.
+```
+위에서 우리가 페이지를 클릭하면 handlePagination함수에 page를 담아서 해당 액션을 dispatch에 담아서 실행하게되고 여기서 받은 action으로 해당 reducer함수로 상태를 변경해주게 되는것입니다.
+![](/images/예측가능한-상태관리-Redux-with-React/03.gif)
+위처럼 클릭시 페이지네이션이 잘 작동함을 알 수 있고 이제 위에서 thunk를 사용한 부분을 보겠습니다.
+
+우선 redux-chunk를 이해하기위해 미들웨어의 개념을 알아야 합니다.
+https://react.vlpt.us/redux-middleware/ 리덕스 미들웨어란?
+즉 리덕스에서 미들웨어를 이용하는 대부분의 이유는 비동기를 처리하기 위함이고 미들웨어 라이브러리로 많이사용되는 reudx-saga와 redux-chunk중에서 chunk를 사용했습니다.
+
+redux-chunk를 추가적으로 만들어주는 과정을 실제 해보도록 하겠습니다. 저는 paginationComments들을 api에서 받아와서 실제로 적용하는 상태가 필요했고 paginationComments.js라는 모듈을 새로 만들어서 ducks패턴으로 만들었습니다.
+```
+//paginationComments.js
+import { getPaginationCommentsApi } from '../../apis/axios';
+
+const GET_PAGINATIONCOMMENTS_START = 'comments/GET_PAGINATION_START';
+function getPaginationStart() {
+  return {
+    type: GET_PAGINATIONCOMMENTS_START,
+  };
+}
+
+const GET_PAGINATIONCOMMENTS_SUCCESS = 'comments/GET_PAGINATION_SUCCESS';
+function getPaginationSuccess(data) {
+  return {
+    type: GET_PAGINATIONCOMMENTS_SUCCESS,
+    data,
+  };
+}
+
+const GET_PAGINATIONCOMMENTS_FAIL = 'comments/GET_PAGINATION_FAIL';
+function getPaginationFail(error) {
+  return {
+    type: GET_PAGINATIONCOMMENTS_FAIL,
+    error,
+  };
+}
+
+export function getPaginationThunk(page) {
+  return async (dispatch) => {
+    try {
+      dispatch(getPaginationStart());
+      const data = await getPaginationCommentsApi(page);
+      dispatch(getPaginationSuccess(data));
+    } catch (error) {
+      dispatch(getPaginationFail(error));
+    }
+  };
+}
+
+const initialState = {
+  loading: false,
+  data: [],
+  error: null,
+};
+
+export const paginationCommentsReducer = (state = initialState, action) => {
+  switch (action.type) {
+    case GET_PAGINATIONCOMMENTS_START:
+      return {
+        ...state,
+        loading: true,
+        error: null,
+      };
+    case GET_PAGINATIONCOMMENTS_SUCCESS:
+      return {
+        ...state,
+        loading: false,
+        data: [...action.data],
+      };
+    case GET_PAGINATIONCOMMENTS_FAIL:
+      return {
+        ...state,
+        loading: false,
+        error: action.error,
+      };
+    default:
+      return state;
+  }
+};
+
+```
+
+기존 액션만 정의되던 pagination.js파일과는 다르게 thunk함수가 생겼고 loading,success,error를 다루는 액션함수가 추가 생성됐습니다.
+우리가 위에서 미들웨어를 사용하는 이유는 비동기를 다루기 위함이라 했고 비동기는 프론트에서 주로 백엔드api와 통신할때 사용합니다.
+백엔드와 통신할때 잘 실행됐을때 response를 return하고 실패했을떄 error를 띄우는데 이를 미들웨어에서 처리하는 과정을 거치고, 이에 더해  실제로 해당 action이 실행되는지 알 수 있게 start액션도 추가합니다.
+
+그리고 thunk함수에서 액션을 다루고 성공하면 데이터를 담아서 reducer로 보내고 실패하면 error를 담아서 reducer로 보내게 됩니다.
+이제 여기서 위에서 설치한 logger와 devtool들이 빛을 발하는데 자세한건 아래 gif에서 확인 가능합니다.
+![](/images/예측가능한-상태관리-Redux-with-React/04.gif)
+해당 api로직이 실행되면서 start액션이 실행되고 정보를 제대로 받아왔기에 success함수가 실행되면서 해당 state.data에 받아온 데이터들이 저장되는걸 console창에서 확인이 가능합니다.
+
+이처럼 pageList.jsx에서 바꾼 상태를 실제 화면을 구성하는 CommentList.jsx파일에서 useSelector로 가져와서 페이지를 클릭하면 실제 목록도 바뀌는걸 알 수 있습니다.
+```
+//CommentList.jsx
+const paginationComments = useSelector(
+    (state) => state.paginationComments.data
+  );
+ return paginationComments.map((comment, key) => (
+    중략...
+    );
+```
+## 4 . 그래서 Redux가 어떤데?
+위처럼 우리는 예측가능한 상태를 관리할수 있도록 도와주는 Redux에 대해 알아봤고 사용법도 알아봤습니다.
+이제 이를 보고 Redux를 처음 접하는 사람은 이런 반론을 제기 할 수 있습니다.
+> 아니 ㅋㅋ 상태관리하는데 useState하나면 가능인데 Redux로 상태관리하기 위해서 MVC패턴, FLUX패턴, 심지어 미들웨어도 알아야하나 ?
+그리고 상태 하나 바꾸려고 action, action함수, reducer, store를 모두 선언해줘야되는데 오히려 코드양이 많아지고 유지보수에 불리한거 아님 ?
+
+모두 맞는 말입니다. 실제로 우리가 useState으로 상태관리하는거보다 훨씬 많은코드 + 라이브러리를 추가적으로 사용함으로써 우리의 서비스는 더 무거워질것입니다.
+그리고 비교적 작은 서비스에서 Redux를 사용하면 위처럼 오히려 상태라는 배보다 그걸 구현하는 배꼽이 더커지는 현상도 있습니다.
+
+그럼에도 불구하고 Redux는 위처럼 **모든 상태들을 예측이 가능하다**는 큰 장점에 더해 상태를 **전역적으로 관리가 가능하다**는 장점이 있기에 많은 기업에서 Redux로 상태를 관리합니다.
+우리가 페이지를 바꾸기위해서 pageList.jsx에서 두개의 action을 실행해줬고 실제로 목록을 렌더링하는 CommentList.jsx에서는 별다른 action을 실행해주지 않고 해당 state만 받아줬습니다.
+또한 비동기 통신부분 로직이 해당 상태관리 파일로 이전되어 자연스럽게 **로직이 분리**되는 이점을 얻을 수 있습니다.
+즉 너무나 명료하게 state들이 관리되고 우리는 action함수로 원하는 state만 바꾸고 원하는 컴포넌트에서 state값만 받아서 view를 보여주면 되는것입니다.
+
+Redux를 사용하지 않았다면 우리는 CommentList.jsx파일에서 해당 비동기통신을 실행해주고 해당값을 받아서 상태를 관리했을거고, 페이지네이션을 구현하기위해서 CommentList.jsx, pageList.jsx 두군데에서 각각 state을 관리해야하며 이는 후에 사이즈가 커지면 **유지보수에 불리**하며, **예측이 힘들어**졌을것입니다.
+
+최근에 세션을 들었던 강사님의 말을 인용하자면 "프로그래밍 개발은 **제약을 두면서** 성장했다"라는 말을 해주셨습니다.
+지금 타입스크립트가 각광받는 이유중에 하나는 자유분방한 자바스크립트에서 **type을 선언해주는 제약**을 두면서 불확실성을 줄이고 **예측이 가능한 방향**으로 코딩이 가능하기 떄문이라 생각합니다.
+또 리덕스에서 상태관리를 오직 action으로만 가능하게끔 **제약을 두면서** 우리는 **상태를 예측이 가능해지게** 된거라는 생각이 들었습니다.
+
+많은 기업에서 Redux를 쓰니까, Typescript쓰니까 사용하는게 아니라 **왜 쓰는지**에 초점을 두고 **등장하게 된 배경**을 찾아보고 이를 썼을때 단점을 파악해서 실제 사용해보니 사람들이 왜 많이 쓰는지 알 것 같습니다.
+
+Redux를 완전 깊게 이해하고 쓴 글은 아니기에 틀린 부분이나, 어색한 부분은 언제든지 피드백부탁드립니다. 감사합니다.

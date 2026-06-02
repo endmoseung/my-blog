@@ -1,0 +1,178 @@
+---
+title: "Validation, Pagination, Searching in React"
+date: "2022-07-21"
+excerpt: "리액트에 대해서 좀 더 알고싶어 주로 쓰이는 기능들을 사용하여 정보를 적어서 페이지에 사용자를 추가하고 검색과 페이지네이션을 동시에 할 수 있는 간단한 웹을 만들었다.  1 . 초기세팅 초기세팅은 CRA(Create-React-App)으로 했다. 내가 아는선에서 아직"
+tags: ["리액트", "자바스크립트"]
+featured: false
+source: "https://velog.io/@endmoseung/Validation-Pagination-Searching-in-React"
+---
+
+> 리액트에 대해서 좀 더 알고싶어 주로 쓰이는 기능들을 사용하여 정보를 적어서 페이지에 사용자를 추가하고 검색과 페이지네이션을 동시에 할 수 있는 간단한 웹을 만들었다.
+
+![](/images/Validation-Pagination-Searching-in-React/01.png)
+
+
+## 1 . 초기세팅
+초기세팅은 CRA(Create-React-App)으로 했다. 내가 아는선에서 아직 다른 배포툴은 필요성을 못 느끼기도 했고 작업이 크지 않을거라 예상했기떄문이다.
+
+## 2. Validation
+요새 어느웹을 가던 회원가입창에서 Validation은 기본적으로 설정되어 있는것 같았다.
+onChange같은 순간순간 변화하는 상태로 체크할거라는 생각은 막연하게 했지만, 구체화하는 과정이 힘들어서 구글링을 좀 했다.
+Validation을 위한 라이브러리도 있었고, 정규식으로 표현하는 방식도 있었는데 나는 정규식을 사용해서 검증하기로 했다.
+
+> https://m.blog.naver.com/PostView.naver?isHttpsRedirect=true&blogId=dalki0126&logNo=220481945365
+정규식은 위의 블로그를 참조했다.
+
+### 2 - 1 . 구체화
+우선 리액트에서 기본적으로 제공하는 Form태그를 사용해서 구현했다. 
+Form안에 input들을 넣어줬고 select태그를 넣어서 성별은 직접 입력하지 않고 클릭해서 정하도록 구현했다.
+
+```
+<AddUserForm onSubmit={onSubmit}>
+            <FormWrapper>
+              <Input
+                validation={validation}
+                onSubmit={onSubmit}
+                inputName={"username"}
+                type={"text"}
+              ></Input>
+              <Input
+                key={1}
+                validation={validation}
+                onSubmit={onSubmit}
+                inputName={"email"}
+                type={"email"}
+              ></Input>
+              <Input
+                key={2}
+                validation={validation}
+                onSubmit={onSubmit}
+                inputName={"nickname"}
+                type={"text"}
+              ></Input>
+              <Select selectName={"gender"}></Select>
+            </FormWrapper>
+            <AddButton isValidation={isValidation}>Add</AddButton>
+          </AddUserForm>
+          //수많은 prop들은 고생의 흔적...
+          
+```
+
+onSubmit을통해 value들을 제출할 수 있도록 했다.
+Validation만 검사하는게 아니라 Validation을 통과하면 버튼이 활성화되고 색이 바뀌면서 조금더 responsive하게 해줬다.
+이것은 주어진 input들의 value들이 모두 Validation을 통과했을때 바뀌도록 IsValidation이라는 state을 통해 관리했다.
+```
+useEffect(() => {
+    if (isUserName && isNickname && isEmail) {
+      setIsValidation(true);
+    } else {
+      setIsValidation(false);
+    }
+  }, [isUserName, isNickname, isEmail]);//각각이 input들의 유효성을 검사해주는 상태들이다.
+  //useEffect를 사용해서 유효성이 바뀔때만 전체 상태관리를 할 수 있도록 코딩했다.
+```
+아래는 제출버튼의 css부분이다.
+
+```
+const AddButton = styled.button`
+  width: 50px;
+  background-color: ${({ isValidation }) =>
+    isValidation ? "#4682B4" : "#D1D1D1"};
+  color: ${({ isValidation }) => (isValidation ? "#FFFFFF" : "#888888")};
+  cursor: pointer;
+  pointer-events: ${({ isValidation }) => (isValidation ? "auto" : "none")};
+  margin-top: 15px;
+  width: 50px;
+  height: 30px;
+  font-size: 13px;
+`;//isValidation이라는 상태를 styled-components에 prop처럼 전해주어 그 값을 삼항연산자로 구현했다.
+```
+이 Form을 제출한뒤 input들 안의 값을 초기화 해줄 필요가 있었고 이는 아래의 블로그에서 첫번째 방법이며 제일 직관적인 event.target.reset()을 사용했다.
+
+
+> https://roomedia.tistory.com/entry/%EC%9D%B4%EC%8A%88-12-react-form-%EC%B4%88%EA%B8%B0%ED%99%94%ED%95%98%EB%8A%94-%EC%84%B8-%EA%B0%80%EC%A7%80-%EB%B0%A9%EB%B2%95#toc-js%EC%9D%98%20event.target.reset()%EC%9D%84%20%EC%9D%B4%EC%9A%A9%ED%95%98%EB%8A%94%20%EB%B0%A9%EB%B2%95
+React Form을 초기화하는 3가지 방법
+
+## 3 . Pagination
+위에서 제출한 form들을 통해 한페이지에 5명의 유저를 보여줄수 있도록 Pagination을 구현했고 앞으로가는 버튼 뒤로가는 버튼을 통해서 페이지간 이동이 가능하도록 했다.
+Pagination도 이미 잘 구성된 라이브러리도 있었지만 순수리액트로 만들어보고자 아래의 블로그를 참조해서 작성했다.
+
+> https://www.daleseo.com/react-pagination/
+React로 페이지네이션 UI 구현하기
+
+### 3 . 1 구체화
+
+최대 페이지수를 limit이라 뒀고 블로그와는 다르게 useState으로 두지 않았는데 그 이유는 단순히 변수로 선언해도 문제가 없기 때문이다.
+
+```
+const offset = (page - 1) * limit; //offset은 userList라는 form으로 제출한 정보들을 다루는 배열을 pagination을 위한 slice해주기 위함
+  const listLength = search === false ? userList.length : search.length; // 총 몇명의 user가 있는지 체크하기위해 배열의 길이로
+  const numPages = Math.ceil((listLength === 0 ? 1 : listLength) / limit); //총 유저의수로 최대 몇개의 페이지가 나올 수 있는지 정해주는 변수, 총유저수 / 한페이지당 유저수를 올림 해줬다.
+```
+
+이제 위에서 총 유저수가 들어있는 userList의 배열을 원하는만큼 map하기위해 slice함수를 사용했다.
+
+```
+{(isSort === "none" ? userArray : isSortState)
+        .slice(offset, offset + limit)
+        .map((item) => (//애로우함수 뒤에는 너무 내용이 많아 중요부분만 편집했다.
+```
+
+위에서 설정한 offset으로 slice해줬고 이제 페이지의 이동은 onClick을 이용해서 앞뒤로 이동가능하게끔 했으며 첫페이지거나 마지막페이질경우 이동을 못하도록 disabled를 줬다.
+```
+ <button disabled={page === 1} onClick={() => setPage(page - 1)}>
+            <FontAwesomeIcon icon={faAngleLeft} />
+          </button>
+          <span>{page}</span> //현재 페이지수를 number로 알려주는 span
+          <button
+            onClick={() => setPage(page + 1)}
+            disabled={page === numPages}
+          >
+            <FontAwesomeIcon icon={faAngleRight} />
+          </button>
+```
+
+## 4 . Search
+이제 위를 통해 추가한 userList들을 검색을 통해 본인이 원하는값만 볼 수 있도록 Search기능을 구현했는데 이건 평소에 공부하던 알고리즘 공부와 비슷해서 별다른 레퍼런스없이 쉽게 구현했던것 같다.
+
+### 4 . 1 구체화
+filter()라는 method를 이용해서 구현했는데, filter가 궁금하다면 내가 티스토리에서 작성했던 아래 글을 참조바란다. 
+>  https://frontend-jin.tistory.com/11
+Javascript Map, foreach, filter란 ?
+
+
+우선 input의 search라는 type으로 만들었다. text type과 다른점은 아래의 사진처럼 x버튼이 활성화된다.
+![](/images/Validation-Pagination-Searching-in-React/02.png)
+
+이 input에 onchange를 줘서 변하는 상황을 체크했다.
+```
+const onChangeSearch = (e) => {
+    e.preventDefault();
+    if (e.target.value !== "") {
+      const filtered = userList.filter((item) =>
+        item.username.includes(e.target.value)
+      ); // filter는 실제 배열자체값을 바꾸는게 아니라 flitered라는 변수를 선언해줬다.
+      setSearch(filtered);
+    } else if (e.target.value === "") {
+      setSearch(false); //false를 준 이유는 원래 userlist와 search중인 상태를 구분하기 위함
+    }
+  };
+```
+### 4 . 2 오류들
+#### 4 . 2 - 1 기존 userList를 보여주지 못함
+처음엔 이 filtering된 값을 그대로 렌더링하도록 map()해서 렌더링 되도록 했는데 이처럼 할 경우 기존에 가지고있던 모든 userList값을 보여주지 못했기에 삼항연산자를 이용해 searching값이 있다면 search상태를 보여주고 없다면 기존 userList를 보여주도록 함으로써 해결했다.
+```
+userArray={search === false ? userList : search}//userList배열을 다른 컴포넌트의 prop으로 넘겨줘야 했기에 이런식으로 표현했다.
+```
+
+#### 4 . 2 - 2 Searching중일때 Pagination의 최대 페이지수가 바뀌지 않음
+예를들어 총 9명의 user가 있으면 최대 2페이지가 됨으로 2페이지까지 활성화가 된다. 이떄 특정 한명을 검색하게 되면 최대 1페이지로 바뀌면서 다음페이지 버튼이 활성화가 안되야 하지만 처음에 그부분을 고려하지 못해서 버튼이 활성화되는 오류가 있었다.
+페이지네이션 할때 총유저수를 배열.length값으로 받았었는데 그럼 searching중일떄 filtering된 배열의 Lenghth로 받으면 해결되지 않을까라는 발상에 아래와 같이 코딩했다.
+
+```
+const listLength = search === false ? userList.length : search.length; //searching중일떈 search상태의 length, 아닐경우 기존 userlist의 length
+```
+
+## 5 . 느낀점
+엄청난 서비스를 만든게 아니고 단일페이지로 구성되서 만만하게 봤었지만 기능하나하나 쉽지 않았다. 특히 이번에 useEffect와 useState를 확실히 알아갔고, 이런 feature들을 기반으로 서비스를 만든다면 전역관리는 필수일것같다라는 생각이들었다. 그래서 다음에 전역관리가 필요한 서비스를 만든다면 recoil이나 mobx같은 전역관리툴을 꼭 사용해보겠다 생각했다.
+userlist의 정보들을 수정하거나 값을삭제, userlist들을 알파벳순으로 sort하는 기능들도 만들었는데 이는 너무 길어질거 같아서 다음 포스팅때 뵙겠습니다.

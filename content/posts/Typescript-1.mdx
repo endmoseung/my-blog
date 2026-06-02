@@ -1,0 +1,109 @@
+---
+title: "Typescript -1"
+date: "2022-08-03"
+excerpt: "타입스크립트에 대해 언제 공부헤볼까? 라는 생각이 들던 찰나에 이번 스프린트에서 냉장고파먹기라는 웹을 만들게 됐다.그러던중 타입스크립트에서 타입을 지정해서 백엔드랑 소통할수 있다는 장점, 코딩하면서 직접 로컬괴 비교하면서 확인했던 오류들을 타입스크립트에선 바로 확인할수"
+tags: ["타입스크립트"]
+featured: false
+source: "https://velog.io/@endmoseung/Typescript-1"
+---
+
+> 타입스크립트에 대해 언제 공부헤볼까? 라는 생각이 들던 찰나에 이번 스프린트에서 냉장고파먹기라는 웹을 만들게 됐다.
+그러던중 타입스크립트에서 타입을 지정해서 백엔드랑 소통할수 있다는 장점, 코딩하면서 직접 로컬괴 비교하면서 확인했던 오류들을 타입스크립트에선 바로 확인할수 있다는등의 장점 그리고 결정적으로
+https://velog.io/@teo/typescript Typescript는 어떻게 공부해야 하나요?
+이 블로그글을 통해 타입스크립트를 공부하고자 마음먹었다.
+모든 타입스크립트에 관련된 모든 포스트들은 제가 배운 주관적인 지식에 의거하므로 틀린게 있다면 댓글로 피드백 부탁드리겠습니다.
+
+
+![](/images/Typescript-1/01.png)
+
+## 1 . Typescript란 ?
+타입스크립트는 자바스크립트의 슈퍼셋인 오픈소스 프로그래밍 언어이다. 마이크로소프트에서 개발, 유지하고 있으며 엄격한 문법을 지원한다. C#의 리드 아키텍트이자 델파이, 터보 파스칼의 창시자인 Anders Hejlsberg가 개발에 참여한다. - 나무위키 -
+
+### 1 - 1 . 타입을 지정한다.
+Typescript란 말그대로 자바스크립트에 type을 지정할 수 있는 언어이다.
+```
+const score:number = 3;
+```
+위처럼 타입을 지정해서 변수를 선언할 수 있다.
+> 그래 알겠어 근데 위에처럼 타입을 지정하면 쳐야할 타이핑수가 더 귀찮아지는게 아닌가?
+
+라고 주변 친구가 물어볼 수 있다. 실제로 타입스크립트는 자바스크립트를 기반으로 하고 타입추론의 기능이 있기 때문에 위와같이 원시적인 타입들에 대해서는 const score = 3;으로 해도 자동으로 number라고 추론해준다.
+물론 위와같이 간단한 경우일때는 그럴수도 있지만 실제 우리가 작성하는 코드속 함수에서는 간단하지 않은경우가 대부분이다.
+그때 타입스크립트를 사용함으로써 우리가 작성한 함수의 리턴값은 이거야라고 타입을 지정함으로써 다른사람이 보거나 자기가 예전에 작성했던 코드를 보고 직관적으로 알 수 있다.
+
+### 1 - 2 . 자동완성이 훨~~~씬 편하다.
+이부분은 위에 링크한 블로그에서 더 잘 작성됐기에 참조하면 좋을것같다.
+![](/images/Typescript-1/02.png)
+위와같이 타입들을 자동완성 해주고 이제 처음에 add라는 타입을 사용시 밑에부터는 add를 제외하고 보여준다.
+![](/images/Typescript-1/03.png)
+
+## 2 . 타입스크립트의 Type
+### 2 - 1 . 기본 Types
+```
+//number 
+  const num:number =-2;
+
+  //string
+  const str: string = "hihi"
+  console.log(str);
+
+  //boolean 
+  const boal:boolean = true;
+
+  //undefined 값이 정해진지 안정해진지 모르는 상황
+  let name:undefined; //
+  let names:number|undefined; //보편적으로 null보다는 undefined을 씀
+
+  //null 값이 아에 정해지지 않은상황
+  let abc:null ;//
+  let abc2:string|null;
+
+  //unknown 어떤 type이 들어올지 모르는것  //
+  let notSure:unknown = 2;
+  notSure="adaf";
+
+  //any   //
+  let anything:any = 2;
+  anything = "bagga";
+
+  // void 함수에서 어떤값을 리턴하지 않을떄 사용 써도되고 안써도됨
+  function print():void {
+    console.log("hello");
+    return ;
+  }
+```
+위가 타입스크립트에서 기본 type들이고 우리가 자바스크립트에서 사용했던 변수type들중 가장 많은것들이기도 하다.
+위에 해당하는 type으로 선언해주지 않으면 빨간줄로 오류를 띄어준다.
+![](/images/Typescript-1/04.png)
+
+
+### 2 - 2 . optional parameter
+```
+  function printName (firstname:string,lastname?:string){ 
+      console.log(firstname);
+      console.log(lastname);
+    }
+    printName("Love","Coding");
+    printName("seung mo");
+```
+위와 같은 함수에서 함수인자로 2가지를 받도록하고, 함수에 2가지인자를 다 넣어주지 않으면 오류를 띄어주는데 :앞에 ?를 붙여주면 이 인자는 들어올수도 있고 안들어올수도 있다는걸 암시해줘서 오류가 나지 않는다.
+![](/images/Typescript-1/05.png)
+함수에 ?를 뻈을때 보이는 오류
+
+### 2 - 3 . Array
+배열은 어떻게 타입을 표시하나라는 의문이 생길텐데 아래처럼 표현할 수 있다.
+```
+const fruits: string[] = ["apple","banana"]; //이방법이 readonly가 자주사용되기 떄문에 더 좋다
+  const numbers:Array<number> = [1,2]; //위에나 아래나 똑같다
+```
+코드내에 적힌것처럼 위에방법이 더 선호되는데 그 이유는 readonly를 사용할수 있기 때문이다.
+readonly란 말그대로 읽기만 가능하게, 즉 변경이 불가능하다.
+```
+function printArray(fruits: readonly string[]){  
+    fruits.push("grape"); 
+```
+위와같은 코드가 있을때 fruits배열에 push를 하려고하면 오류를 띄어준다.
+![](/images/Typescript-1/06.png)
+
+## 3 . 마무리
+타입들을 지정하고 어떤 타입들이 있는지를 알아봤고, 다음엔 커스텀 타입을 지정하는 alias개념과 타입에서의 or과 and로 포스트할 예정이다.

@@ -1,0 +1,128 @@
+---
+title: "JS배우기 feat(For of, Reduce, Splice, Replace)"
+date: "2022-06-10"
+excerpt: "코딩테스트 공부겸 자바스크립트에 대해서 공부를 하자는 의미에서 자바스크립트 알고리즘 강의를 듣기 시작했고 배웠던것을 잊지 않기위해, 쉽게 공유하기 위해 이글을 씁니다!  1. 왜 코딩테스트 공부를 자바스크립트로 하는가?"
+tags: ["JavaScript", "코딩테스트"]
+featured: false
+source: "https://velog.io/@endmoseung/JS배우기-featFor-of-Reduce-Splice-Replace"
+---
+
+> 코딩테스트 공부겸 자바스크립트에 대해서 공부를 하자는 의미에서 자바스크립트 알고리즘 강의를 듣기 시작했고 배웠던것을 잊지 않기위해, 쉽게 공유하기 위해 이글을 씁니다!
+
+## 1. 왜 코딩테스트 공부를 자바스크립트로 하는가?
+![](/images/JS배우기-featFor-of-Reduce-Splice-Replace/01.jpeg)
+필자가 프론트엔드 개발자를 목표로 공부하고 있는것이 제일 큰 이유이고, 그다음으로는 
+> 너 자바스크립트에 대해서 깊게 알고있냐?
+
+라는 질문에 쉽게 대답할수 없기떄문에 자바스크립트 공부와 코테공부 두마리 토끼를 잡아보자!라는 생각에 자바스크립트로 하게된것 같다.
+물론 소수 회사에선 프론트엔드 직군에 코테는 자바스크립트로만 응시할수 있기 떄문이기도 하다.
+
+## 2 . 코테 공부를 시작하며
+코테 강의를 듣다보니 이게 코딩을 배우는건지 수학적 사고를 묻는건지 헷갈리긴 했다. 가령 이런 문제들이 있는데 0부터 30까지의 숫자의 합을 구하는 코딩을 하라고 하면 여러 방법들이 있다.
+하지만 평소 수학에 어느정도 지식이 있는 사람이면 알 수 있다. 
+> 그냥 n(n+1)/2에 30 대입해서 30*31/2 = 465아님 ?
+
+물론 이렇게 코딩해도 된다. 
+```
+function solve(n) {
+        let answer = (n * (n + 1)) / 2;
+        return answer;
+      }
+      console.log(solve(30));
+```
+이렇게 작성해도 되지만 우리는 누구인가? 개발자이다.
+개발자라면 누구나 알기쉽게 코딩해야 할 필요가 있다 생각했고, 그걸 배워나가면 코딩테스트도 대비하고 나자신도 성장할거라 생각했다.
+왜 그렇게 생각했냐면 이전에 자바스크립트로 프로젝트 만들고 리액트로 프로젝트 만들기도 전에 드림코딩 유튜브 채널에서 자바스크립트 기본문법에 대해서 배웠었는데, 강의 내용이 초심자를 위해 너무 잘 짜여지기도 했고 엘리님이 설명도 잘 해 주셔서 그떄는 기억이 잘 났었지만 막상 실전에서는 기억이 잘 안나는 편이었다.
+하지만! 이렇게 실제로 문제에 적용해나가면서 실제 내가 하는 프로젝트에도 적용해보고 싶었고 method들을 배울떄 실전에 어떻게 적용해볼까 라는 생각도 했다.
+![](/images/JS배우기-featFor-of-Reduce-Splice-Replace/02.jpeg)
+
+
+## 3. For of, Reduce, Splice, Replace
+### 3-1 For of
+For of는 강의 처음부터 지금 배운데까지에서 많이 썼던 method인데 mdn 공식사이트의 설명은 다음과 같다.
+![](/images/JS배우기-featFor-of-Reduce-Splice-Replace/03.png)
+
+간단하게 설명하자면 다음과 같은 코드가 있다고 했을떄
+```
+let arr = [1, 2, 3, 4, 5, 6, 7, 8];
+      for (let x of arr) {
+        console.log(typeof x, x);
+      }
+```
+이러한 값을 내보낸다.
+![](/images/JS배우기-featFor-of-Reduce-Splice-Replace/04.png)
+즉 배열의 index를 하나하나 돌면서 값을 return하는건데 for of구문 뒤에 콜백함수를 넣어서 원하는 값으로 return받을수 있다.
+```
+function solution(arr) {
+        let answer = [];
+        let sum = 0,
+          min = 1000;
+        for (let x of arr) {
+          //for of 배열의 모든 자리마다 한번씩 비교하도록
+          if (x % 2 === 1) {
+            sum += x;
+            if (x < min) min = x;
+          }
+        }
+        answer.push(sum);
+        answer.push(min);
+        return answer;
+      }
+
+      arr = [12, 77, 38, 41, 53, 92, 85];
+      console.log(solution(arr));
+```
+예를 들어 위의 코드에서 arr안에 배열중에 홀수를 받아서 홀수의 값만 더한 sum과 홀수중에서 가장작은수인 min을 출력해야하는 문제인데, 위에서 for루프 뒤에 원하는 로직을 작성함으로써 최소값과 값들의 합을 구할수 있었다.
+
+### 3-2 Reduce
+원래는 Reduce method가 foreach, map ,filter 이 친구들과 짝인데 요거는 티스토리에서 작성했던게 있어서 링크만 남기려한다.
+https://frontend-jin.tistory.com/11
+
+위의 세개의 method들과 다르게 Reduce는 값을 리턴하고 작동원리를 간단하게 설명하자면 아래와 같은 코딩이 있다.
+```
+const array1 = [1, 2, 3, 4];
+
+// 0 + 1 + 2 + 3 + 4
+const initialValue = 0;
+const sumWithInitial = array1.reduce(
+  (previousValue, currentValue) => previousValue + currentValue,
+  initialValue
+);
+
+console.log(sumWithInitial);
+// expected output: 10
+```
+Reduce안에 인자로 콜백함수와 initialValue를 받는데 쉽게 말하면 배열내 모든 합을 구해주는 method이다.
+initialValue를 더해준다음 initialValue와 배열 첫번쨰 index의 값을 더한후 그 값(1)을 두번쨰 index(2)와 더해준뒤 이 값의 합(3)을 3번쨰 index(3)을 더해준후 그 값의합 (6)을 마지막 index(4)와 더해서 총 합 (10)을 return한다.
+> 그럼 initialValue의 값을 안 설정하거나 0이아닌 다른값을 주면요?
+
+안 설정하면 default값이 0이므로 위처럼 0에서 시작할것이고 initialValue를 3으로 준다고 하면 위의 코딩에서 13을 return한다.
+![](/images/JS배우기-featFor-of-Reduce-Splice-Replace/05.png)
+### 3-3 Splice
+우선 Splice의 기본정의 부터 보겠다.
+![](/images/JS배우기-featFor-of-Reduce-Splice-Replace/06.png)
+기존의 push와 pop과는 다르게 splice는 원하는 위치에서 요소를 삭제 또는 추가가 가능하다. 아래는 강의내용을 들으며 필기한 내용이다.
+> splice : element.splice(a,b,c) >>> a에는 몇번쨰 인덱스부터 시작할건지, b에는 몇개의 인덱스를 지울건지 즉 b값이 0이라면 아무것도 제거하지 않는다. , c에는 본인이 추가하고싶은것 "ㅌxxxx"를 추가하면  ㅌxxxx"가 앞에 설정한 배열에 추가되고 c말고도 게속 추가 할 수있다(d에 원하는 값 넣기)
+
+예를들어 arr=[1,2,3,4,5,6,7,8]이라는 배열이 있을때 arr.splice(1,1,9)를 해주면 arr[1]인 2라는 숫자부터 하나의 인덱스를 지우고 그자리에 9를 넣어준다.
+![](/images/JS배우기-featFor-of-Reduce-Splice-Replace/07.png)
+### 3-4 Replace
+우선 정의는 아래와 같다.
+![](/images/JS배우기-featFor-of-Reduce-Splice-Replace/08.png)
+replace(a,b)에서 a는 주어진 문자중 어떤 문자를 바꿀것인지고 b는 그문자를 어떤 문자로 바꿀지를 정해주는 인자고 아래는 예시이다.
+
+```
+let answer = BANANA;
+        answer = answer.replace(/A/g, "#"); // replace(a,b) a에서는 원하고자하는 문자 혹은 문자열을 설정하고 /A/뒤에 g라는 값은 전역적으로 하라는뜻인데 이를 설정 안하면 만나는 처음값만 수정한다, b에서는 선택한 그 문자열을 b로 바꿔준다.
+        return answer;
+        //answer = B#B#B#
+```
+주석에도 있듯이 /뒤에 g라는건 전역적으로 관리한다는 뜻이므로 BANANA에 모든 A를 #으로 바꿧지만 /A/g로 작성하지않고 'A'로 작성한다면 첫번쨰 A만 #으로 바껴서 아래같이 나온다.
+![](/images/JS배우기-featFor-of-Reduce-Splice-Replace/09.png)
+이 method를 공부하면서 채팅속에서 욕설을 필터링하는법도 생각해봤는데 비속어를 미리 지정해둔 다음 그욕설을 Replace method를 써서 *로 치환해버리면 될거 같다 생각했다.
+
+## 4 . 끝으로
+솔직히 강의가 좋아서 그런진 모르겠지만 코테 공부한다는 느낌보다는 자바스크립트 공부한다는 느낌이 더 들었다.
+> 코테를 공부하기 위해 자바스크립트를 쓰는게 아니라 자바스크립트 공부를 위해 코테를 곁들인 느낌?
+
+내 신념 "Don't lie to myself!"에 의거하여 앞으로도 매일 꾸준히 공부해갈 생각이다,

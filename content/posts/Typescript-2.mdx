@@ -1,0 +1,141 @@
+---
+title: "Typescript - 2"
+date: "2022-08-05"
+excerpt: "저번에 이어 타입스크립트에서 배웠던 타입추론부터 시작하겠습니다. 그리고 모든 타입스크립트에 관련된 모든 포스트들은 제가 배운 주관적인 지식에 의거하므로 틀린게 있다면 댓글로 피드백 부탁드리겠습니다.지난 1편에서 타입스크립트는 타입을 정의할 수 있는 장점이 있다고 했다."
+tags: ["타입스크립트"]
+featured: false
+source: "https://velog.io/@endmoseung/Typescript-2"
+---
+
+> 저번에 이어 타입스크립트에서 배웠던 타입추론부터 시작하겠습니다. 그리고 모든 타입스크립트에 관련된 모든 포스트들은 제가 배운 주관적인 지식에 의거하므로 틀린게 있다면 댓글로 피드백 부탁드리겠습니다.
+
+## 1 . type alias
+지난 1편에서 타입스크립트는 타입을 정의할 수 있는 장점이 있다고 했다.
+기본적인 타입 ex) string,number등에 더해 본인이 원하는데로 타입을 지정할수 있다 아래처럼.
+```
+type Text = string;
+  const name: Text = "ellie";
+  const address: Text = "korea";
+  type Num = number;
+  type Student = {
+    name: string;
+    age: number;
+  };
+```
+위의 코드로 예를들면 Student라는 타입에서는 무조건 name은 string age는 number가 들어가야한다.
+가령 아래와 같은 코드에서는 오류를 띄어준다.
+![](/images/Typescript-2/01.png)
+Type alias는 기본적인 타입들로도 지정이 가능하지만 아래처럼 정해진 문자, number로도 가능하다.
+```
+type Name = "name";
+  let moseungName: Name;
+  moseungName = "name";
+  type Json = "json";
+  const json: Json = "json";
+  type One = 1;
+  const one:One =1;
+```
+one이라는 변수에 1이아닌 다른 number나 string이 들어가면 오류를 띄운다.
+
+## 2 . 	Union and intersection
+Union과 intersection은 자바스크립트에 and와 or연산자와 유사하다.
+### 2 - 1 . Union
+Union은 or 연산자와 같은 역할이고 주어진 타입을 여러개 열거하고, 열거한것들중 하나를 일치하면 그 타입은 통과된다.
+```
+ type Direction = "left" | "right" | "up" | "down";
+  function move(direction: Direction) {
+    console.log(direction);
+  }
+  move("down");
+```
+위의 코드에서 move("down")은 direction안에 있는 모든걸 충족하지 못하지만 Union으로 선언했기에 통과된다.
+
+### 2 - 2 . Intersection
+Intersection은 and와 비슷하고, 두개의 타입을 &로 이어주면 두개의타입에서 선언한 모든걸 만족해야된다.
+```
+type Student = {
+    name: string;
+    score: number;
+  };
+
+  type Worker = {
+    employeeid: number;
+    work: () => void;
+  };
+
+  function internWork(person: Student & Worker) {
+    console.log(person.employeeid, person.score, person.name); //person은 둘다 해당되기 떄문에 모든 정보를 접근할 수 있따.
+  }
+
+  internWork({
+    name: "moseung",
+    score: 100,
+    employeeid: 27,
+    work: () => {},
+  });
+```
+위의 코드에서 person이라는 인자는 Student라는 type과 Worker라는 type둘다를 만족해야 하므로 interWork()안에 들어가야할 인자는 4개모두 포함돼야하며 한가지라도 만족하지 않는다면 오류를 띄어준다.
+![](/images/Typescript-2/02.png)
+
+### 2 - 3 . 번외 : 함수
+함수에서 결과값들에서 왜 타입을 따로 선언해주지 않았냐는 질문이 있을것같아 추가로 작성한다.
+위에서 나온 함수들은 리턴값이없는 즉 함수내에서 어떤값을 반환하지 않는 함수들이기 때문에 원래 함수에 :void를 붙여줘야하나 이건 안붙여도 타입스크립트에서 자동적으로 추론을 해줘서 안붙이기도한다.
+아래사진처럼 둘다 오류가 없는모습.
+![](/images/Typescript-2/03.png)
+
+그리고 함수에서 리턴값이 있다면 무조건 타입을 선언해줘야하는데, 이는 이함수가 어떤값을 리턴해주는지 알 수 있을뿐더러 타입을 선언해주고 함수내에서 리턴값을 주지않을경우 오류를 띄어준다.
+![](/images/Typescript-2/04.png)
+
+## 3 . Type inference
+Type inference는 타입스크립트에서 제공하는 멋진 기능중 하나인데 타입을 알아서 추론해준다.
+```
+
+  let text = "hello";
+  text = "hi~";
+  text = 1; 
+```
+위와같은 코드에서 text:string이라고 타입지정을 해주지 않아도 text는 string이라고 타입스크립트에서 타입을 추론하고 text=1;은 number이기 때문에 오류를 띄어준다.
+```
+function add(x: number, y: number) {
+    // 함수뒤에 :number를 붙여주지 않아도 넘버끼리의 합이므로 number일것이라 추론해준다.
+    return x + y;
+  }
+```
+위와같은 코드에서도 주석에 적힌것처럼 return값이 있으면 타입이 number라고 선언되야하는게 맞지만 오류를 띄우지 않는다.
+![](/images/Typescript-2/05.png)
+## 4 . Enum
+Enum은 얼마전에 본 좋은 벨로그가 있기에 링크로 대신 남기겠습니다.(날먹주의)
+https://velog.io/@hhhminme/%EB%84%A4-Enum-%EB%88%84%EA%B0%80-Typescript%EC%97%90%EC%84%9C-Enum%EC%9D%84-%EC%93%B0%EB%83%90
+
+
+## 5 . Type Assertion
+타입표명이라고 하며 타입스크립트딥다이브 웹에서는 이런식으로 설명합니다.
+> TypeScript에서는 시스템이 추론 및 분석한 타입 내용을 우리가 원하는 대로 얼마든지 바꿀 수 있습니다. 이때 "타입 표명(type assertion)"이라 불리는 메커니즘이 사용됩니다. TypeScript의 타입 표명은 프로그래머가 컴파일러에게 내가 너보다 타입에 더 잘 알고 있고, 나의 주장에 대해 의심하지 말라고 하는 것과 같습니다.
+
+```
+function jsStrFunc(): any {
+    return "hello"; 
+  }
+  const result = jsStrFunc();
+```
+위와같은 코드에서 result는 "hello"라는 string을 return한다고 우리는 코딩하면서 알 수 있지만 시스템은 이를 모릅니다.
+그래서 string이나 배열의 길이를 알 수 있는 method인 .length를 자동완성에서 보여주지않는데 아래와같이 타입표명을 해주면 사용이 가능하다.
+```
+console.log((result as string).length); 
+  console.log((<string>result).length);
+```
+> 
+> 위아래가 같은것, 하지만 타입스크립트 딥다이브에 의거하면 &lt;string>과같이 작성하면 리액트에서 component를 명명하는것과 헷갈리기 떄문에 as를 쓰는것을 추천한다고합니다.
+ 
+![](/images/Typescript-2/06.png)
+잘 보이는 모습
+![](/images/Typescript-2/07.png)
+타입표명을 하지 않으면 아무것도 띄워주지 않는다.
+  
+하지만 타입표명을 아래코드 같은 위험이 있기도하고 딥다이브에서도 이는 해롭다고 간주합니다.
+```
+const wrong: any = 5;
+  console.log((wrong as Array<number>).push(1));
+  //값이 이미 number로 돼있는데 억지로 배열이라고 선언하고 push()하면 파일이 죽어버린다.
+```
+  ![](/images/Typescript-2/08.png)

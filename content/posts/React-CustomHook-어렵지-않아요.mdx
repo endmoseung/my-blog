@@ -1,0 +1,422 @@
+---
+title: "React와 Hooks에 대해서 알아보기"
+date: "2024-01-06"
+excerpt: "이 글은 리액트를 이제 막 접하고 커스텀훅에 대해서 어려워 하시는 분들을 위해 쓰는 글입니다.  1. React 우선 리액트가 어떤 프레임워크(라이브러리)인지 알 필요가 있다. 왜 괄호를 붙였냐면 리액트 공식 홈페이지에서부터 그렇게 소개하고 있다.  흔히 React를"
+tags: ["CustomHook", "React"]
+featured: false
+source: "https://velog.io/@endmoseung/React-CustomHook-어렵지-않아요"
+---
+
+> 이 글은 리액트를 이제 막 접하고 커스텀훅에 대해서 어려워 하시는 분들을 위해 쓰는 글이다.
+
+## 1. React
+우선 리액트가 어떤 프레임워크(라이브러리)인지 알 필요가 있다. 왜 괄호를 붙였냐면 리액트 공식 홈페이지에서부터 그렇게 소개하고 있다.
+![](/images/React-CustomHook-어렵지-않아요/01.png)
+흔히 React를 사용하여 CSR(클라이언트사이드렌더링)을 할 수 있고 SPA(싱글페이지어플리케이션)을 할 수 있다고 하는데 사실 그건 과거 Angular로도 이미 대체가 가능했다. 
+하지만 리액트는 아래의 이유때문에 사용하는 의의가 크다.
+아래는 리액트 공식 홈페이지에서 리액트를 소개하는 3가지 타이틀이다.
+![](/images/React-CustomHook-어렵지-않아요/02.png)
+
+선언형은 개발자라면 많이 접해본 단어이고 컴포넌트 기반으로 코드를 조합하는 방법이 리액트에서 권장한다. CDD(컴포넌트드리븐디벨롭) 개발 방법론도 생겼다.
+마지막 ReactNative는 html css구조로 개발하지 않기에 은근 함정이기도 하다.
+그 전에 우선 CSR과 SPA에 대해서 짚고 넘어가겠다.
+### CSR
+CSR은 클라이언트사이드렌더링의 줄인말이고 **클라이언트(브라우저)에서 렌더링을 진행**하는 방식이다.
+서버에서 필요한 자바스크립트와 초기 HTML을 제공 받는다.
+CSR의 동작 과정은 다음과 같다.
+
+1. 브라우저에서 웹 애플리케이션의 초기 페이지 요청을 서버에 보냅니다.
+2. 서버는 요청에 대한 응답으로 HTML 파일과 JavaScript 파일을 전달합니다.
+3. 브라우저는 HTML 파일을 받고 파싱하여 빈 페이지를 렌더링합니다.
+4. JavaScript 파일이 로드되면, 웹 애플리케이션의 코드가 실행됩니다.
+웹 애플리케이션은 API 요청 등 필요한 데이터를 서버로부터 비동기적으로 받아옵니다.
+5. 데이터를 받아온 후, 웹 애플리케이션은 JavaScript를 사용하여 동적으로 화면을 업데이트하고 필요한 컴포넌트를 렌더링합니다.
+
+**CSR의 장점**
+
+1. 사용자 경험(UX): 초기 페이지 로딩 후, 웹 애플리케이션의 인터랙션에 대한 응답이 빠르고 즉각적입니다.
+2. 서버 부하 감소: 서버는 초기 페이지 렌더링 이후에는 주로 API 요청에 대한 응답만 처리하므로, 더 많은 요청을 처리할 수 있습니다.
+3. 재사용 가능한 로직: 클라이언트 사이드에서 동작하는 JavaScript 코드는 다른 플랫폼에서도 재사용할 수 있습니다.
+
+**CSR을 고려해야 할 점**
+
+1. 검색 엔진 최적화(SEO): 초기 페이지 로딩 시에는 검색 엔진이 빈 페이지를 인덱싱할 수 있으므로, SEO에 영향을 줄 수 있습니다. 이를 해결하기 위해 서버 사이드 렌더링(SSR)이나 프리 렌더링 등의 기술을 사용할 수 있습니다.
+2. 초기 로딩 시간: 초기 페이지 로딩 시에는 HTML 파일과 JavaScript 파일을 모두 다운로드해야 하므로, 초기 로딩 시간이 상대적으로 길어질 수 있습니다.
+3. JavaScript 사용 환경: CSR은 JavaScript를 실행할 수 있는 브라우저 환경이 필요합니다. JavaScript를 비활성화한 경우나 일부 구형 브라우저에서는 제대로 동작하지 않을 수 있습니다.
+
+### SPA
+우선 SPA는 모바일 어플리케이션에서 시작했다.
+흔히 모바일 서비스를 사용하려면 우선 다운로드 받아야하고 **한번 다운로드 받으면** 내부에 서버통신하는 로직뺴고는 항상 내부 코드대로 똑같이 동작한다.
+모바일 어플리케이션에서는 부드럽게 화면이 전환(UX)되며 이런 장점과 위에서 CSR을 하면서 얻는 이점등을 채택하고자 사용됐다.
+React로 예를들면 index.html파일 하나와 자바스크립트 파일을 초기에 다운로드하면 이후 index.html내부에서 자바스크리브 파일의 소스를 토대로 화면이 렌더링돼고 유저의 요청에 따라 변경되며 서버쪽 통신으로 데이터를 받으면 그 부분만 바뀐다.
+
+
+그래서 우리는 CSR과 SPA의 장점을 살리고 선언형 코드를 작성하여 컴포넌트 기반으로 코드를 재사용하기위하여 React를 사용한다.
+## 2. React Hook
+그래서 우리는 리액트를 쓰게 됐고 리액트에서 제공하는 멋진 api, Hook을 사용할 수 있게 됐다.
+우리는 아주 간단한 함수 하나로 화면을 재 렌더링(useState) 할 수 있고 간단한 훅으로 effect마다 함수를 실행(useEffect), 돔 컨트롤(useRef)을 할 수 있게 됐다.
+물론 처음부터 이렇게 좋은게 있었던건 아니고 비교적 최근인 React 16.8버젼에 훅이 등장했다.
+### Class형 컴포넌트
+과거에는 Class형으로 리액트를 사용했었다.
+다음은 Class형 컴포넌트로 폼 컴포넌트를 작성한 예시이다.
+
+```tsx
+import React from 'react';
+
+class Form extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      name: '',
+      email: '',
+      message: ''
+    };
+  }
+
+  handleInputChange(event, inputName) {
+    this.setState({
+      [inputName]: event.target.value
+    });
+  }
+
+  handleSubmit(event) {
+    event.preventDefault();
+    console.log('Name:', this.state.name);
+    console.log('Email:', this.state.email);
+    console.log('Message:', this.state.message);
+    // 상태를 이용한 추가적인 로직 또는 서버로의 데이터 전송 등을 처리할 수 있습니다.
+  }
+
+  render() {
+    return (
+      <form onSubmit={(event) => this.handleSubmit(event)}>
+        <label>
+          Name:
+          <input
+            type="text"
+            value={this.state.name}
+            onChange={(event) => this.handleInputChange(event, 'name')}
+          />
+        </label>
+        <label>
+          Email:
+          <input
+            type="email"
+            value={this.state.email}
+            onChange={(event) => this.handleInputChange(event, 'email')}
+          />
+        </label>
+        <label>
+          Message:
+          <textarea
+            value={this.state.message}
+            onChange={(event) => this.handleInputChange(event, 'message')}
+          />
+        </label>
+        <button type="submit">Submit</button>
+      </form>
+    );
+  }
+}
+
+export default Form;
+```
+
+물론 작동은 하지만 **this문법의 생소함 **즉 다른 언어에서의 this와는 다른 컨텍스트 기반으로 동작한다는점과** Hooks의 재사용과 테스트가 더 좋다는 장점**이 있어 요즘은 Hook을 사용하여 함수형 컴포넌트로 많이 작성한다.
+
+#### this
+JavaScript에서의 this와 다른 언어에서의 this와는 몇 가지 차이점이 있습니다.
+
+**JavaScript에서의 this**
+JavaScript에서의 this는 실행 컨텍스트에 따라 동적으로 결정됩니다. this는 현재 실행 중인 함수를 호출한 객체를 참조합니다. this는 함수를 어떻게 호출했느냐에 따라 달라질 수 있습니다.
+
+일반 함수 호출: 일반 함수에서의 this는 전역 객체인 window를 참조합니다. 이는 브라우저에서 동작하는 JavaScript에서의 기본 전역 객체입니다. Node.js에서는 전역 객체가 global입니다.
+메서드 호출: 객체의 메서드에서의 this는 해당 메서드를 호출한 객체를 참조합니다. 메서드 내부에서 this를 사용하면 메서드를 호출한 객체에 접근할 수 있습니다.
+생성자 함수: 생성자 함수에서의 this는 새로 생성되는 인스턴스를 참조합니다. 생성자 함수를 new 키워드와 함께 호출하면 this는 새로 생성된 객체를 가리킵니다.
+화살표 함수: 화살표 함수에서의 this는 함수가 정의된 위치에서 상위 스코프의 this를 그대로 참조합니다. 즉, 화살표 함수 내부에서 this를 사용하면 주변 스코프의 this를 가리킵니다.
+
+**다른 언어에서의 this**
+다른 언어에서의 this는 주로 객체 지향 프로그래밍에서 사용되며, 객체 내부에서 객체 자신을 참조하기 위해 사용됩니다. 대부분의 객체 지향 언어에서는 this를 사용하여 현재 객체의 인스턴스를 참조하거나 메서드를 호출하는 데 사용됩니다.
+
+하지만 JavaScript의 this는 다른 언어의 this와는 다른 동작과 개념을 가지고 있습니다. JavaScript에서의 this는 실행 컨텍스트에 따라 유연하게 동작하며, 호출 방식에 따라 달라질 수 있습니다. 이러한 동작 방식은 JavaScript의 독특한 특징 중 하나입니다.
+
+> 더 궁금하다면 다음 리액트 공식문서를 참고 바란다.
+https://ko.legacy.reactjs.org/docs/hooks-intro.html
+
+### React Hook
+우선 리액트 훅은 두가지의 규칙이 있다.
+1. 최상위(at the Top Level)에서만 hook을 호출해야 한다.
+2. 리액트 함수내에서만 사용해야 한다.
+이는 동일한 순서로 컴포넌트 렌더링에서 훅 사용을 보장하기 위해서이다.
+
+> Hook의 규칙에 대해서 더 궁금하다면 다음 리액트 공식문서를 참고 바란다.
+https://ko.legacy.reactjs.org/docs/hooks-rules.html#explanation
+
+#### useState
+우선 useState는 리액트에서 상태를 관리하기 위한 Hook이다.
+흔히 우리가 페이지에서 특정 부분이 유저의 행동으로 인해 데이터가 바뀌고 UI가 변경돼야할때 사용한다. 아래는 간단한 사용예시이다.
+```tsx
+import React, { useState } from 'react'
+
+const 가계부 = () => {
+  const [count, setCount] = useState(0)
+
+
+  return (
+    <div>
+      <button onClick={()=>setCount(count+1)}>손님수 증가</button>
+      <div>{`손님수: ${count}`}</div>
+    </div>
+  )
+}
+
+export default 가계부
+
+```
+#### useEffect
+effect는 사이드이펙트라고도 부르고 리액트가 돔을 그리고 난 후에 이펙트를 추적하는 훅이다. 클래스형 컴포넌트에서 컴포넌트가 mount돼고 unmount 됐을때 사용하던것들이 통합돼서 하나로 사용된다. 아래는 간단한 사용예시이다.
+```tsx
+import React, { useEffect, useState } from 'react'
+
+const 가계부 = () => {
+  const [count, setCount] = useState(0)
+  const [money, setMoney] = useState(0)
+
+  useEffect(() => {
+    setMoney(count * 1000)
+  }, [count])
+
+  return (
+    <div>
+      <div>{`손님수: ${count}`}</div>
+      <div>{`매출: ${money}`}</div>
+    </div>
+  )
+}
+
+export default 가계부
+
+```
+
+개인적으로는 useEffect의 잦은 사용은 비권장한다.
+예를들어 한 컴포넌트 내에 useEffect가 10개이고 한 effect로 인해 다른 effect가 발생하여 이 effect가 제 3의 effect를 수정한다면 코드를 읽어가는 과정이 쉽지 않을것이다.
+이를 함수형 프로그래밍에서 부수효과라고 하는데 부수효과가 많은 코드일수록 변경은 쉽지만 코드를 재사용하기에는 어렵게 만든다.
+![](/images/React-CustomHook-어렵지-않아요/03.png)
+함수형 프로그래밍에서 코드내에서 자주 바뀌는것(effect)는 action이라고 부르고 이는 코드의 변경은 쉽지만 이를 다른 함수에서 재사용하기에 어려우며 Data는 자주 바뀌지않는것(프론트엔드에서는 상수)이지만 재사용하기에 쉽다.
+이 사이에 있는것이 계산(Util함수)이다.
+즉 코드에서는 자주바뀌지 않는것의 조합이 많을수록 코드를 읽기 쉽고 변경에 용이하여 코드를 추적하기 쉽지만 반대일수록 어려워진다. 이는 테스트에서도 적용되며 우리가 좋은 테스트를 하기위해서는 이를 지켜야한다.
+하지만 우리가 코드를 작성하는데 계산과 Data로만 만들수는 없으니 **항상 코드를 작성할때 과연 Action일 필요가 있는가에 대한 꾸준한 고민**을 하고 쓸 필요가 있다.
+
+## 3. React Custom Hook
+자 그럼 드디어 커스텀 훅을 다루게 됐다.
+우선 커스텀이라는 말이 흔한데 게임에서는 캐릭터 커스터마이징, 커스텀 키보드, 커스텀 컴퓨터 등등 정말 많이 쓰는 말이다.
+커스텀은 기본적인 디자인이나 기능을 개인의 취향에 맞게 변경하거나 조정하는 것을 의미한다.
+즉 우리도 리액트 훅을 개인의 취향에 맞게 변경하거나 조정하는것을 의미하며 처음에 언급한 선언적인 코드 작성과도 연결된다.
+가령 컴포넌트가 mount됐을때 우리는 다음과 같이 코드를 작성한다.
+### 선언적인 코드
+```tsx
+useEffect(()=>{
+  실행될 기능
+},[])
+
+useEffect(()=>{
+  실행될 기능
+},[인자])
+
+useEffect(()=>{
+  실행될 기능
+},[인자])
+
+useEffect(()=>{
+  실행될 기능
+},[인자])
+```
+근데 이런 useEffect가 페이지내에 많으면 우리는 어떤 이펙트가 마운트됐을때 쓰는지 어떤 이펙트를 참조하는지 코드를 추적하기 어려울것이다.
+그러면 우리의 리액트가 권장하는 선언형코드에서 조금 벗어나는 코드가 될 수 있기에 우리는 이를 커스텀훅으로 만들어보려한다.
+우선 커스텀 훅은 규칙이 있다. 무조건 함수의 이름에 use를 붙여야한다.
+```tsx
+import React, { useEffect } from 'react'
+
+const useMount = (callbackFn) => {
+  useEffect(() => {
+    callbackFn()
+  }, [])
+}
+
+export default useMount
+
+```
+
+그럼 이를 통해 기존 코드를 다시 만들어보겠다.
+
+```tsx
+useMount(실행될 기능)
+
+useEffect(()=>{
+  실행될 기능
+},[인자])
+
+useEffect(()=>{
+  실행될 기능
+},[인자])
+
+useEffect(()=>{
+  실행될 기능
+},[인자])
+```
+이를 통해 우리는 useEffect의 deps까지 보지 않더라도 useMount라고 선언된 변수명을 보고 기능을 유추할 수 있다.
+
+> 이런식으로 재사용하기 편하게 만들어둔 훅들을 관리하는 [react-use](https://github.com/streamich/react-use)와 같은 라이브러리들도 있다.
+
+### 코드의 재사용성
+위처럼 선언적인 코드를 위해 커스텀훅을 사용할수도 있고 훅을 사용한 코드의 재사용성을 위해서 커스텀훅을 만들 수 있다.
+```tsx
+// FreindPost.jsx
+const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(url);
+        const jsonData = await response.json();
+        setData(jsonData);
+        setLoading(false);
+      } catch (error) {
+        setError(error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [url]);
+
+if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
+
+  return (
+    <div>
+      {/* 데이터를 사용하여 UI를 렌더링 */}
+      {data && <div>좋아요: {data.good}</div>}
+    </div>
+  );
+
+//FriendSubscribe.jsx
+const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(url);
+        const jsonData = await response.json();
+        setData(jsonData);
+        setLoading(false);
+      } catch (error) {
+        setError(error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [url]);
+
+if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
+
+  return (
+    <div>
+      {/* 데이터를 사용하여 UI를 렌더링 */}
+      {data && <div>좋아요: {data.good}</div>}
+    </div>
+  );
+
+```
+위는 구독한 친구라는 컴포넌트와 친구의 포스트를 보는 컴포넌트인데 친구라는 데이터를 가져오는 fetch에 관한 로직과 이에 관련한 loading상태를 컨트롤하기 위한 로직이 중복적으로 사용됐다.
+그래서 이를 해결하기 위해 커스텀훅을 만들어보려고 한다.
+```tsx
+const useFetch = (url) => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(url);
+        const jsonData = await response.json();
+        setData(jsonData);
+        setLoading(false);
+      } catch (error) {
+        setError(error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [url]);
+
+  return { data, loading, error };
+};
+```
+useFetch라는 함수를 통해서 URL이라는 인자를 받아 data와 로딩상태 에러상태를 리턴하는 새로운 훅을 만들었다.
+그러면 우리는 기존 코드에서 이부분을 재사용하여 리팩토링한다.
+```tsx
+// FreindPost.jsx
+const { data, loading, error } = useFetch('https://api.example.com/data');
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
+
+  return (
+    <div>
+      {/* 데이터를 사용하여 UI를 렌더링 */}
+      {data && <div>좋아요: {data.good}</div>}
+    </div>
+  );
+//FriendSubscribe.jsx
+  const { data, loading, error } = useFetch('https://api.example.com/data');
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>;
+  }
+
+  return (
+    <div>
+      {/* 데이터를 사용하여 UI를 렌더링 */}
+      {data && <div>좋아요: {data.good}</div>}
+    </div>
+  );
+
+```
+
+## 4. 끝으로
+
+#### 무조건 추상화가 옳나요 ?
+이에 대한 대답은 일단 No이다. 위는 간단하게 데이터를 Get해오기 위한 훅이어서 괜찮지만 만약에 A라는 페이지와 B라는 페이지에서 api를 요청할때 넣어야하는 값이 기획적으로 달라질 수도 있고 현재는 같지만 추후 두개의 훅의 성질이 달라질 수도 있기 때문에 무조건 옳은 방법은 아니다.
+
+> React Hook을 다루는 이번주제와는 조금 다르지만 추상화에 대한 좋은 기준을 담은 블로그글이 있어서 공유한다.
+[React 컴포넌트와 추상화](https://fe-developers.kakaoent.com/2022/221020-component-abstraction/) - 카카오 기술블로그
+
+우리가 작성하는 코드에서 무조건적으로 맞는건 없고 상황마다 다르기때문에 어떤 상황에서 이런 코드가 유리하고 설계가 좋은건지 꾸준히 학습하여 **내가 개발해야하는 프로젝트에서 최선은 어떤것인지 사용**할 수 있도록 할 필요가 있다.

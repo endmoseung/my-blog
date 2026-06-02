@@ -64,9 +64,10 @@ export default function Home() {
 
       <section>
         <h2 className="section-label">All</h2>
-        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))" }}>
+        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", alignItems: "stretch" }}>
           {rest.map((p, i) => (
-            <FadeIn key={p.slug} delay={0.04 * i}>
+            // delay는 위 6개까지만 단계적으로(64개 누적되면 끝 카드가 너무 늦게 뜸). height:100%로 카드가 셀을 채워 높이가 정렬됨.
+            <FadeIn key={p.slug} delay={Math.min(i, 6) * 0.04} style={{ height: "100%" }}>
               <PostCard post={p} />
             </FadeIn>
           ))}

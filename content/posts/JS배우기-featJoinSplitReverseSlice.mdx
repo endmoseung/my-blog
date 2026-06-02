@@ -1,0 +1,73 @@
+---
+title: "JS배우기 feat(Join,Split,Reverse,Slice)"
+date: "2022-06-18"
+excerpt: "코테 공부를 하며 유용할것 같은 method들을 소개합니다!!아래는 Join의 기본 정의입니다.Join method는 인자로 string을 받을 수 있습니다.예를들어위와 같이 Join의 인자로 \"ad\"로 넘겨주면 다음과 같은 결과가 나옵니다.물론 ,나.같은 특수기호도"
+tags: ["자바스크립트", "코딩테스트"]
+featured: false
+source: "https://velog.io/@endmoseung/JS배우기-featJoinSplitReverseSlice"
+---
+
+> 코테 공부를 하며 유용할것 같은 method들을 소개합니다!!
+
+![](/images/JS배우기-featJoinSplitReverseSlice/01.png)
+
+## 1 . Join
+아래는 Join의 기본 정의입니다.
+![](/images/JS배우기-featJoinSplitReverseSlice/02.png)
+Join method는 인자로 string을 받을 수 있습니다.
+예를들어
+```
+const a = ["당근을", "흔들어", "주세요"];
+
+      const b = a.join("ad");
+      console.log(b);
+```
+위와 같이 Join의 인자로 "ad"로 넘겨주면 다음과 같은 결과가 나옵니다.
+![](/images/JS배우기-featJoinSplitReverseSlice/03.png)
+
+물론 ,나.같은 특수기호도 넣을수 있고 인자로 아무것도 넣지않으면 default값으로 반점이 들어갑니다
+![](/images/JS배우기-featJoinSplitReverseSlice/04.png)
+## 2. Split
+아래는 split의 기본 정의입니다.
+![](/images/JS배우기-featJoinSplitReverseSlice/05.png)
+
+string인자만 사용이 가능한 method이고 split도 인자를 받습니다.
+예를들어
+```
+ const a = "당근을1흔들어1주세요";
+      const b = a.split("1");
+      console.log(b);
+```
+인자로 "1"을 넘겨주면 1을기준으로 나눈 배열을 return합니다.
+![](/images/JS배우기-featJoinSplitReverseSlice/06.png)
+위와같은 방식에서 "string"이라는 문자열이 몇번쓰는지도 알 수 있는데 위에선 1이 2번있었고 b.length가 3이므로 b.length-1임을 알 수 있습니다.
+
+Split으로 많이쓰이는 두가지 경우가 있는데 split("")가 있고 split(" ")가 있습니다. 전자는 문자열을 하나씩 나눠 배열로 만들고 후자는 띄어쓰기를 기준으로 나눠 배열로 만듭니다.
+![](/images/JS배우기-featJoinSplitReverseSlice/07.png)
+
+![](/images/JS배우기-featJoinSplitReverseSlice/08.png)
+split("")는 띄워쓰기도 문자로 간주해 나눕니다.
+![](/images/JS배우기-featJoinSplitReverseSlice/09.png)
+
+![](/images/JS배우기-featJoinSplitReverseSlice/10.png)
+## 3 . Reverse
+아래는 Reverse의 기본 정의입니다.
+![](/images/JS배우기-featJoinSplitReverseSlice/11.png)
+오직 배열에서만 사용가능하고 아래는 사용 예시입니다.
+![](/images/JS배우기-featJoinSplitReverseSlice/12.png)
+![](/images/JS배우기-featJoinSplitReverseSlice/13.png)
+값 자체를 바꿔버려서 아래와 같이 사용 가능합니다.
+![](/images/JS배우기-featJoinSplitReverseSlice/14.png)
+
+## 4 . Slice
+아래는 Slice의 기본정의이고 Splice와 비슷합니다.
+![](/images/JS배우기-featJoinSplitReverseSlice/15.png)
+Slice(a,b)는 인자로 두개를 받을 수 있고 a는 index 시작번호고, b는 b앞까지 자릅니다. b값을 정하지 않고 a만 넣으면 a번 index부터 끝까지 return합니다.
+아래는 예시입니다.
+```
+const a = ["당근을", "흔들어", "주세요", "당근마켓", "가고싶다"];
+      const b = a.slice(1, 4);
+      console.log(b);
+```
+![](/images/JS배우기-featJoinSplitReverseSlice/16.png)
+문자열 string에서도 사용가능하고 본인이 원하는 만큼 잘라서 새로운 배열을 만들떄 유용한 method입니다.

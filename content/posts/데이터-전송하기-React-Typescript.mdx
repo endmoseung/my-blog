@@ -1,0 +1,174 @@
+---
+title: "데이터 전송하기 React + Typescript"
+date: "2023-01-21"
+excerpt: "프로젝트를 만들면서 서버에 이미지나 String을 전송할일이 생겼고 이를 다루면서 많은 문제들을 만났기에 어떻게 문제를 해결했고 혹여나 나같은 사람들이 쉽게 적용할 수 있도록 글을 쓰려고한다.  1 . 나의 문제 서비스를 만들다보면 서버에 데이터를 전송하는일이 흔하다."
+tags: ["리액트", "타입스크립트"]
+featured: false
+source: "https://velog.io/@endmoseung/데이터-전송하기-React-Typescript"
+---
+
+> 프로젝트를 만들면서 서버에 이미지나 String을 전송할일이 생겼고 이를 다루면서 많은 문제들을 만났기에 어떻게 문제를 해결했고 혹여나 나같은 사람들이 쉽게 적용할 수 있도록 글을 쓰려고한다.
+
+## 1 . 나의 문제
+서비스를 만들다보면 서버에 데이터를 전송하는일이 흔하다. 보통 클라이언트에서 유저에게 값을 입력받은 값을 토대로 날것으로든 계산해서든 REST API를 이용해서 데이터를 전송하는일이 잦다.
+그럼 클라이언트에서 어떻게 유저에게 값을 입력받을까를 생각해보면 보통 `Input`태그를 이용해서 유저에게 입력을 받으며 오늘 주제의 핵심은 `Input`의 많은 type들중 file타입을 주로 다룰 예정이다.
+> Input에 대해 자세하게 알고싶으면 [MDN공식사이트Input](https://developer.mozilla.org/ko/docs/Web/HTML/Element/Input)을 참조 바란다.
+
+위에서 Input으로 데이터를 받은값을 클라이언트에서 잘 보관했다가 버튼이나 어떤 이벤트가 발생했을때 서버에 데이터를 전송한다.
+
+
+### 그래서 내가 해결해야할 문제
+내가 만드는 서비스에서 게시물추가페이지를 전담했는데 이때 게시물에 담긴 내용들을 서버에 전송해야했고 안에 담기는 내용들이 string값만 있는게 아니라 이미지파일도 포함되있었다.
+> 그리고 게시물에 조건들이 있었는데 위에서 보낼 이미지 파일의 갯수는 최대3개이며 파일별 데이터의 허용크기는 5mb이고 파일창을 열었을떄 다중선택이 가능해야한다.
+
+이를 다루기위해 `multipart/formdata`의 형식으로 전송했다.
+그래서 이 부분을 내가 해결해야했고 이번에는 내가 겪은 문제애 대해서 더 깊게 다룰예정이라 어떻게 데이터를 전송하는지 `multipart/formdata`는 어떤것일지는 잘 작성하신분의 블로그에서 더 수월하게 이해 가능하다.
+> [HTTP multipart/form-data 란?](https://velog.io/@shin6403/HTTP-multipartform-data-%EB%9E%80)
+
+## 2. 파일 최대 갯수, 용량 제한
+우선 기존에는 파일을 하나씩 올릴 수 있기때문에 파일들의 갯수가 3개가 된다면 파일을 올리는 인풋창을 `disabled`처리해서 더이상 클릭이 불가능하게 설계했다.
+> 아래 코드에서 ID와 hidden이 있는 이유는 기본 input 디자인이 아래 사진과 같은데 우리는 디자인한걸 사용하기위해 label과 혼용해서 사용했다. 자세한건 아래 블로그를 참조바란다.
+![](/images/데이터-전송하기-React-Typescript/01.png)
+https://rgy0409.tistory.com/4801
+
+```
+ <input
+        multiple
+        disabled={currentImg.length === 3}
+        onChange={handleSelectImageFile}
+        className="hidden"
+        id="file"
+        type={'file'}
+        accept=".jpg, .jpeg, .png, .svg, image/*;capture=camera"
+      />
+```
+
+하지만 위처럼 **파일을 여러개 올리는게 사용자경험에 유리할거라는 결정**이 났고 그에따라 `multiple`이라는 property로 파일 다중선택이 가능하도록 설정했다.
+여기서 문제가 발생했는데 `multiple`이라는 속성으로 파일을 여러개 선택할 수 있지만 **내부적으로 파일을 n개만큼 선택할 수 있도록 하는건 불가능**했다.
+그래서 n개의 파일을 받고 onchange를 통해 해당 이벤트를 관찰해서 그 안에 파일이 몇개 담겨있는지 확인하고, 위에서 필요한 조건중에 파일이5mb를 넘으면 안됐기에 그 두개를 체크하기로 했다.
+근데 여기서 기존에 파일을 하나 올리고 나중에 또 파일을 여러개 올릴 수 있기때문에 이때 기존 파일의 갯수 + 현재 선택한 파일의 갯수를 합한값이 3이 넘는다면 토스트창을 띄워주기로 했다.
+![업로드중..](blob:https://velog.io/71c6805f-c418-4487-b68b-718ba974b669)
+이제 파일들을 event로 관찰하면 내부에 files라는 property가 있고 타입은 FileList임을 알 수 있는데 나는 당연히 배열인줄알고 forEach를통해 해결하려 했다.
+하지만 해당 코드에 에러가 발생했고 어떻게 해야하나 구글링해서 수정한 코드는 아래와 같다.
+```
+[].forEach.call(files, readAndPreview)
+//[]을 Array.prototype으로 대체가능
+```
+files를 call의 첫인자에 유사배열을 넣고 우리가 원하는 함수를 두번째 인자로 넣어주면 우리는 **유사배열을 실제배열의 method로 사용할 수 있다.**
+아래는 총 코드이다
+```
+const checkFileSize = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let isOver5MB = false
+    const files = e.target.files as FileList
+    const getSize = () => {
+      for (let i = 0; i < files.length; i++) {
+        const convertedSize = getByteSize(files[i].size)
+        if (convertedSize > 5) {
+          setIsToast(true)
+          setToastType('fileSize')
+          isOver5MB = true
+          break
+        }
+      }
+    }
+    ;[].forEach.call(e.target.files, getSize)
+    return isOver5MB
+  }
+
+  const checkMaxFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let isMaxFile = false
+    if (
+      e.target.files !== null &&
+      currentImg.length + e.target.files?.length > MAX_FILE
+    ) {
+      setToastType('maxFile')
+      setIsToast(true)
+      isMaxFile = true
+    }
+    return isMaxFile
+  }
+
+  const handleSelectImageFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const checkedMaxFile: boolean = checkMaxFile(e)
+    if (checkedMaxFile) {
+      return (e.target.value = '')
+    }
+    const checkedFileSize: boolean = checkFileSize(e)
+    if (checkedFileSize) {
+      return (e.target.value = '')
+    }
+    //e.target.value를 빈string으로 초기화시켜주지 않으면 버그가 발생
+    encodeFileToBase64(e.target.files as FileList)
+    // FileList가 이터러블하지 않으나 유사배열이라서 Array를 빌려서 ...메소드를 사용함
+    setFiles([...files, ...Array.from(e.target.files as FileList)])
+  }
+```
+위 코드에서 spread 연산자를 쓰기위해 Array.from으로 감싸준이유도 [이터러블](https://ko.javascript.info/iterable)한 배열을 빌리기 위함이다.
+그리고 코드 마지막에 encodeFileToBase64함수는 우리 서비스에서 파일을 올렸을떄 어떤 사진인지 미리보기를 제공하기 위해 만든 함수이다.
+
+그럼 유사배열을 간단하게 얘기하자면 **배열과 유사하게 생긴 형태의 객체**라고 할 수 있다.
+위의 사진처럼 0,1,2번같은 인덱스번호가 있고 length가 있지만 배열의 method들을 사용불가능하다.
+> 자세한 설명은 [제로초님의 블로그](https://www.zerocho.com/category/JavaScript/post/5af6f9e707d77a001bb579d2)를 참고바란다! 
+추가로 프로토타입에 대해서 알면 좋을것 같아서 같이 스터디하신분의 스터디내용이 프로토타입을 잘 정리했기에 [이것](https://github.com/Wooteco-JS-study/Modern_Javascript_Teco/blob/main/2%EC%A3%BC%EC%B0%A8/cruelladevil.md)도 참고하면 좋을것 같다.
+
+## 3 . 데이터 서버에 전송하기
+그럼 이제 위에 데이터를 상태에 잘 보관했다가 사용자가 추가버튼을 눌렀을때 백엔드에 데이터를 전송해야한다.
+이때 multipart/formdata를 사용하기위해 우리는 자바스크립트의 FormData객체를 사용해야한다.
+> FormData는 잘 작성하신 [블로그](https://2ham-s.tistory.com/307)를 참고바란다.
+
+이제 FormData를 new연산자로 생성해준뒤 우리가 서버로 보낼 데이터를 `apppend`라는 method를 사용해서 추가해준다.
+아래 코드처럼 append의 첫번쨰 인자는 우리가 서버와 미리 정해둔** schema에 해당하는 string**을 담아주고 **2번째인자에는 우리가 전송할데이**터, 새번째인자는 우리팀 백엔드의 요청에따라 name값을 담아주는데 사용했다.
+
+```
+const data = new FormData()
+    if (files !== undefined && files.length > 0) {
+    //여기서 if문으로 block을 연 이유는 Type Narrowing을 위해서다.
+      files?.forEach((file) => {
+        data.append('attachments', file as File, file?.name)
+      })
+    }
+    data.append(
+      'writeRecordRequestDto',
+      new Blob([JSON.stringify(formData)], { type: 'application/json' })
+    )
+```
+아래에 `writeRecordRequestDto`에는 Blob형태로 담아서 파일을 전송했는데 Blob으로 사용함으로써 전송하는 타입을 정할수 있기때문이다.
+> Blob의 자세한 설명은 [MDNBlob](https://developer.mozilla.org/ko/docs/Web/API/Blob)을 참고바란다.
+
+이제 최종적으로 서버와 미리 정해준 스키마에 따라 axios를 사용하던 fetch를 사용하던 데이터를 전송하면된다.
+**headers의 Content-type은 꼭 multipart/form-data**로 해줘야지 우리가 보관한 FormData를 서버에서 확인 가능하다.
+```
+//위에서 보관한 데이터를 통해 서버에 글을 추가하는 Api
+export const enrollRecord = async (data: FormData) => {
+  return baseInstance.post('/record', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+}
+```
+
+## 4 . 끝으로
+이번에 겪었던 문제들을 이해하는데 그동안 했던 자바스크립트 딥다이브가 충분한 도움이 됐다.
+왜냐하면 자바스크립트에 대해서 상세히 알지못했다면 유사배열이란 무엇인지, 이터러블이 뭔지, 그를 구현하기위한 프로토타입은 어떻게 작동하는지를 이해하지 못한다면 해당 문제를 완전 이해했다고 할 수 없다.
+그렇게된다면 **이후 비슷한 문제를 만났을때 이번의 문제로부터 도움을 얻기보단 또 다시 검색의 루프에 빠져들었을것이다.**
+하지만 자바스크립트에 대해서 충분한 학습이 됐기에 이후 다른 문제들 예를들어 유사배열을 만나거나 이터러블에 관련된 문제들을 만났을때 **나는 이전에 배운문제로부터 적용하여 문제를 해결할 수 있을것같다.**
+물론 자바스크립트에 대해서 깊게 몰랐어도 나는 결국 이 문제를 돌아가는데는 문제없이 개발했을것이다.
+하지만 선행된 자바스크립트 지식덕분에 나는 **더 다양한 시각**으로 바라볼 수 있게됐다고 생각한다.
+왜냐하면 내 경험을 비춰보더라도 자바스크립트에 대해서 상세하게 알기직전에는 구글링한 결과를 그대로 복사 붙여넣기 했을뿐 자세히 들어가본적은 드물기 때문에 좁게 생각했던것 같다.
+#### 자바스크립트를 깊게 배우는 이유
+자바스크립트를 깊게 알고 구글링할때와 모르고 구글링할때의 차이를 설명하고자할때 나는 흔히 영어로 비유하고싶다.
+우리가 흔히 모르는 영단어를 검색하면 우리는 **그 단어 자체를 외우기 쉽상이고** 이후 비슷한 형태의 단어가 나왔을때 우리는 새로운 단어라고 인식해서 그 단어가 어떤의미인지 유추하지 않을것이다.
+에를들어 `precaution`이라는 영단어는 예방법이라는 단어인데 이는 이전의라는 접두사인 `pre`와 주의라는 `caution`의 조합으로 만들어진 단어이다.
+이런걸 아는 사람이 접했을때 이 사람은 유추할것이다. 아 pre가 이전의라는 뜻이고 caution은 주의라는 뜻이니 미리 주의를한다는 뜻이구나. 이는 실제로 예방법이라는 뜻과 매우흡사하다.
+그럼 이 사람은 후에 pre라는 접두사가 붙은 단어는 이런식으로 접근할것이고 이는** 생각을 확장하는데 큰 도움이 될거라고 생각한다.**
+예를들어 `predict`(예측하다)라는 단어를 접했을때 pre는 미리 라는 뜻이고 dict는 적다라는 뜻이므로 미리적다라는 뜻으로 대충 예상하고 접근할것이다.
+그래서 나는 자바스크립트를 배운다는거는 영어의 동작원리에 대해서 배우는것과 유사하다고 생각한다.
+
+#### 처음부터 설계를 똑바로 하기
+개발하다보면 초기 기획과는 달라지는 부분이 분명존재한다.
+물론 유저의 요구에 의해 기획이 바뀌는것까지 고려해서 코딩한다는건 조금 억지일수도 있으나 **우리가 초기에 캐치할수 있는 부분(설계)은 똑바로** 가져가야된다고 생각했다.
+위에서 파일을 여러개 추가하나 하나만 추가하나 결국 내가 뒤에 리팩토링했던 방식대로 코딩을 했으면 이부분은 **리팩토링 안해도 됐을부분이다.**
+그리고 이부분은 유저의 요구때문에 바뀐게 아니라 분명 나도 파일이 여러개 추가될수도 있다는 사실을 인지하고 있었다.
+하지만 당장에 빨리 결과물을 내기위해 설계를 덜하고 진행했더니 현재처럼 리팩토링하기 어려운 코드가 돼버렸다.
+이런것도 생각하면서 코딩을 해야되겠구나 깨달았던 계기인것같고 오히려 좋다 지금 깨달았으니 현업에 간다면 더 잘 할수 있지 않을까.
+
+혹시나 잘못된 부분이 있다거나 피드백 주실게 있다면 자유롭게 댓글남겨주세요:)

@@ -1,0 +1,128 @@
+---
+title: "리액트로 MBTI웹 만들기"
+date: "2022-07-12"
+excerpt: "이전 피그마로 계획 구상이후 직접 프로젝트를 만들었다. 약 2주정도 걸린것 같다.내힘으로 혼자 만든 첫 리액트 웹이라 CRA로 template을 만들어 시작했다. 우선 정리했던 피그마를 토대로 페이지를 구상하고 컴포넌트들을 나눠서 만들었고 라우터를 설정해줬다. 플로우는"
+tags: ["리액트", "자바스크립트", "프로젝트", "회고"]
+featured: false
+source: "https://velog.io/@endmoseung/리액트로-MBTI웹-만들기"
+---
+
+> 이전 피그마로 계획 구상이후 직접 프로젝트를 만들었다. 약 2주정도 걸린것 같다.
+
+&lt;p align="center">&lt;img src="https://velog.velcdn.com/images/endmoseung/post/9b3e0dc9-0eaa-41c5-b6f1-d605aa7016a8/image.png" height="100px" width="400px" text-al>&lt;/p>
+
+## 1 . Create-React-App
+내힘으로 혼자 만든 첫 리액트 웹이라 CRA로 template을 만들어 시작했다. 우선 정리했던 피그마를 토대로 페이지를 구상하고 컴포넌트들을 나눠서 만들었고 라우터를 설정해줬다. 
+&lt;p align="center">&lt;img src="https://velog.velcdn.com/images/endmoseung/post/2f56f870-8642-45e2-aabe-2165ff74ac66/image.png" height="100px" width="400px" text-al>&lt;/p>
+
+플로우는 위와 같이 구상했기때문에 5개의 페이지를 만들었다. 메인 페이지에는 이 웹을 간단히 소개하는 사진들과 text들로 내용이 닮겼고 UI는 최대한 리그오브레전드 홈페이지와 비슷한 느낌으로 만들려고 노력했다.
+우선 css는 postcss방식과 styled-component 두가지의 방식을 사용해본 결과 후자가 좀 더 유동적이고 편했으며 내 서비스의 크기도 작다고 판단해 styled-component를 사용하기로 했다.
+
+
+## 2 . MainPage
+다른 레퍼런스들을 참조했을때 웹에서의 화면이 100vw로 설정하면 내용에 비해 너무 쓸대없이 사용하는것 같은 느낌을 받아서 기본width는 500px로 설정해서 사용했고, heigt은 기본적으로 100vh로 두고 내용이 넘어가면 자동으로 확장되게했다. 초반엔 인지하지 못했던 모바일버젼 View도 생각해서 후반에 mediaScreen을 사용해서 450px이하에선 화면을 Row에서 column으로 구상해서 좀더 Responsive하게 화면을 구상했다.
+&lt;p align="center">&lt;img src="https://velog.velcdn.com/images/endmoseung/post/e8e8a654-3ebf-41b3-a3c5-d350d1a6811a/image.png" height="100px" width="400px" text-al>&lt;/p>
+페이지 이동 버튼들은 component로 만들어서 재사용성을 높였다.
+
+### 	2 . 1 Theme
+자주 쓰이는 색깔이나 폰트사이즈같은 것들은 theme으로 관리했다.
+&lt;p align="center">&lt;img src="https://velog.velcdn.com/images/endmoseung/post/015c6932-3a4e-4122-9782-62273a3b62c6/image.png" height="100px" width="400px" text-al>&lt;/p>
+colors에는 메인색깔과 자주쓰이는 색깔들을 정의했고 fontSize에는 자주쓰는 사이즈를 정의했다.
+
+### 2 . 2 Global Style
+전역적으로 동일하게 적용되는것, 새롭게 추가한 폰트를 정의해주기 위해서 globalStyle을 사용해줬고 위의사진에 GlobalStyle이 적용되있는걸 알 수 있다.
+&lt;p align="center">&lt;img src="https://velog.velcdn.com/images/endmoseung/post/0580d485-7d46-444f-a89b-4379374940bf/image.png" height="100px" width="400px" text-al>&lt;/p>
+
+
+내용은 내가 아는 기본적인것만 세팅해줬고, 하면서 필요할것같은것들은 메모해서 다음 프로젝트때 추가하기로 했다.
+
+## 3 . SelectPage
+Mbti나 Quiz를 풀기위해선 문항들을 선택하는 Page들을 관리해야 했고 프론트엔드로만 프로젝트를 했기 떄문에 문항들을 constant라는 폴더에 문제들을 배열로 담아서 그 문제들을 import해서 사용했다.
+&lt;p align="center">&lt;img src="https://velog.velcdn.com/images/endmoseung/post/bfac8392-72c5-4ccd-8111-0925d8fc401c/image.png" height="100px" width="400px" text-al>&lt;/p>
+화면 안에 모든 피쳐들을 component로 만들어서 재사용성을 높였는데 이는 퀴즈에도 똑같이 쓰이기떄문이었다.
+문제가 하나 선택되면 Usestate으로 번호를 하나 증가시키고 import한 배열에서 index를 하나씩 증가하면서 화면이 렌더링되도록 했다.
+마지막 페이지에선 이제 질문이 끝났다는걸 알려주기 위해 다음으로 가는 버튼을 활성화 시켜줬다.
+&lt;p align="center">&lt;img src="https://velog.velcdn.com/images/endmoseung/post/2b831ad2-39ed-46e3-b69f-78f6d7e463b0/image.png" height="100px" width="400px" text-al>&lt;/p>
+
+문항이 클릭되면 결과보기의 색이 흰색으로 바뀌면서 클릭이 가능해진다.
+여기에 점수 선정방식이나 ,MBTI결과는 원래는 전역적으로 상태관리해서 결과페이지에서 사용하려 했으나, useHistory를 사용해서 정보를 넘겨줬다.
+### 3 . 1 Loading
+
+> 이전에 다른 MBTI페이지를 이용했을때 결과를 선정하는동안 Loading화면이 있으면 결과를 실제로 분석하는듯한 느낌을 받았었기에 loadingpage도 추가했다.
+
+&lt;p align="center">&lt;img src="https://velog.velcdn.com/images/endmoseung/post/dc6df0ac-837d-417b-af7b-b0a7ce68330a/image.png" height="100px" width="400px" text-al>&lt;/p>
+
+로딩 페이지에서 setTimeout과 useNavigate을 사용해서 3초동안 loading페이지에 있다가 결과페이지로 이동했고 사람들이 많이 사용하는 로딩바는 이전 드림코딩수업에서 사용했었기 떄문에 gif를 이용해서 로딩화면을 구성해줬다.
+ 
+##  4 . ResultPage
+이전에 골랐던 문항들을 통해 결과페이지에서 어떤 Mbti인지 내가 받은 점수는 어느정도 Tier인지 알려줬고 이전에 prop으로 받았던 정보들을 통해 직접 logic을 통해 실제값을 산정하고 그 값을 화면에 렌더링해줬다.
+&lt;p align="center">&lt;img src="https://velog.velcdn.com/images/endmoseung/post/1b15b1e2-a8ab-498f-9778-c8344d03d665/image.png" height="100px" width="400px" text-al>&lt;/p>
+결과를 선정하는 logic이 Quiz에서는 그저 score를 증가시키고 몇점은 Tier가 어딘지 알려주면 됐기 떄문에 쉬웠지만 Mbti에서는 문자열을 control해야 했기에 좀 난해했지만 이전에 코딩테스트에서 했던 문자열을 원하는값으로 가공하는 방식을 사용했다.
+```
+const solution = (sortMbti) => {
+    //sortMbti를 문자갯수로 재정의 한다음 2개이상인값만 뽑아서 Mbti를 추출하는 함수
+    let answer = "";
+    let sorted = "";
+    let cnt = 1;
+    for (let i = 0; i < sortMbti.length; i++) {
+      if (i === sortMbti.indexOf(sortMbti[i])) {
+        answer += sortMbti[i];
+      }
+      if (sortMbti[i] === sortMbti[i + 1 < sortMbti.length && i + 1]) {
+        cnt++;
+      } else {
+        if (cnt > 1) {
+          answer += String(cnt);
+        }
+        cnt = 1;
+      }
+    }
+    for (let i = 0; i < answer.length; i++) {
+      if (isNaN(answer[i + 1]) === false && answer[i + 1] > 1) {
+        sorted += answer[i];
+      }
+    }
+    const mbtiResult = MbtiResults.filter(
+      (r) =>
+        r.mbti.split("").sort().join("") === sorted.split("").sort().join("")
+    );
+    return mbtiResult;
+  };
+```
+여기서 마지막에 filter로 원하는값을 추출하고 그값을 return해준뒤 그 정보를 토대로 미리 constant폴더에 정해준값과 대조해서 올바른 값을 rendering했다.
+결과 페이지에는 내가 직접했던 결과물을 공유하는 방식으로 카카오톡api와,페이스북api를 사용했고 직접 저장할수 있도록 하기위해 html2canvas를 사용하여 화면을 캡쳐후 다운로드 할 수 있게 만들었다.
+
+**&lt;html2canvas사용법>**
+
+https://every-time-i-pass-this-place.tistory.com/entry/html2canvas-%EC%82%AC%EC%9A%A9%EB%B2%95-%EC%BA%A1%EC%B2%98%EB%A5%BC-%EC%9D%B4%EB%AF%B8%EC%A7%80%EB%A1%9C-%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C
+
+**&lt;카카오톡API사용법>**
+https://developers.kakao.com/docs/latest/ko/message/js-link
+
+**&lt;페이스북API사용법>**
+```
+function shareFacebook() {
+    window.open(
+      "http://www.facebook.com/sharer.php?u=https://lolqbti.netlify.app/"
+    );
+  }
+```
+## 5 . 총 평가
+롤 MBTI와 롤 QUIZ의 패이지는 결이 다를거라 생각했고 결과 페이지또한 그럴거라 봤는데 다만들고나서 보니 결이 비슷해보이긴 했고 코딩도 비슷한 내용이 닮겼다. 그래서 처음에 페이지를 나눌떄 비슷한 페이지로 컴포넌트를 재사용했으면 어떘을까 하는 아쉬움이 들었고, 위에서 점수를 관리할떄 전역적으로 관리할 수 있게 contextAPI를 사용했다면 좀 더 쉽게 관리했을것 같다.
+그리고 FramerMotion을 사용해서 페이지를 좀더 화려하게 만들어보고 싶었는데 이는 아직 안익숙함+ 페이지의 목적과는 안맞다는 판단으로 포기했다.
+배포는 netlify로 했다.(외쳐요 킹플라이~)
+&lt;p align="center">&lt;img src="https://velog.velcdn.com/images/endmoseung/post/599c7512-80f1-4e4c-adfe-857c493fc394/image.png" height="100px" width="400px" text-al>&lt;/p>
+그리고 내가 만든 웹이 좀더 구글이나 네이버에 잘 보였으면 좋겠다는 생각에 ssr이나 csr같은 검색 방식에 대해서도 조금 공부해야겠다는 생각이 들었고 이는 공부하면서 직접 적용해보려고 한다.
+
+## 6 . 느낀점
+이전에 드림코딩 리액트강의를 수강하고 내 손으로 만든 첫 리액트웹이었는데 리액트 훅에 관한 지식이 깊지 않음을 꺠달았고 좀 더 공부해야할 필요를 느꼈다.(특히 useEffect)
+위에서도 언급햇던 Context도 좀 더 공부해야겠다 느꼈고 필요하다면 redux나 recoil같이 상태관리 tool도 한번 배워야겠다 생각했다.
+그리고 자바스크립트는 어느정도 안다고 생각했으나 map도 제대로 사용못하는 내 모습을 보며 자바스크립트 공부는 아직 한참은 멀었다라는 생각을 했고 자바스크립트도 더 공부해야겠다 느꼈다.
+&lt;p align="center">&lt;img src="https://velog.velcdn.com/images/endmoseung/post/faeeda35-2184-4c70-98f9-bc1c261ee6a4/image.png" height="100px" width="400px" text-al>&lt;/p>
+개발자인 친구가 말했던 리액트공부는 로그함수 그래프처럼 초반엔 확 늘지만 어느정도 수준에선 엄청난 노력이 필요하단걸 실감했다.
+원래는 이걸 만들고 타입스크립트를 좀 공부해볼까 생각했는데 아직 리액트와 자바스크립트도 잘 모르는데 타입스크립트를 배우는건 조금 이르다 판단했고 우선 그 둘을 먼저 확실하게 짚고 넘어가야겠다 느꼈다.
+마지막으로 제 웹 링크 걸고 가겠습니다. 롤 게임속 상황으로 MBTI를 알 수 있고 quiz들을 풀면서 뇌지컬 티어를 알 수 있는 웹입니다.
+
+https://lolqbti.netlify.app/
+
+lolqbti의 스프린트 과정이 궁금하다면 ? https://velog.io/@endmoseung/%EB%82%98%EB%A7%8C%EC%9D%98-%EC%9E%91%EC%9D%80-%EC%8A%A4%ED%94%84%EB%A6%B0%ED%8A%B8%EB%A1%A4-MBTI%ED%80%B4%EC%A6%88
