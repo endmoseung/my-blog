@@ -6,10 +6,10 @@ const tagChip = (t: string) => (
     key={t}
     style={{
       fontSize: ".72rem",
-      fontWeight: 700,
-      color: "var(--accent)",
-      background: "color-mix(in srgb, var(--accent) 14%, transparent)",
-      padding: "2px 9px",
+      fontWeight: 600,
+      color: "var(--muted)",
+      background: "var(--chip)",
+      padding: "3px 10px",
       borderRadius: 999,
     }}
   >
@@ -26,9 +26,7 @@ export default function PostCard({ post, large = false }: { post: PostMeta; larg
         display: "block",
         padding: large ? 28 : 20,
         borderRadius: 18,
-        background: large
-          ? "linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, var(--card)), var(--card))"
-          : "var(--card)",
+        background: "var(--card)",
         border: "1px solid var(--line)",
         transition: "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
         gridColumn: large ? "1 / -1" : undefined,
@@ -40,8 +38,8 @@ export default function PostCard({ post, large = false }: { post: PostMeta; larg
             style={{
               fontSize: ".7rem",
               fontWeight: 800,
-              color: "#fff",
-              background: "var(--accent)",
+              color: "var(--bg)",
+              background: "var(--fg)",
               padding: "2px 10px",
               borderRadius: 999,
             }}

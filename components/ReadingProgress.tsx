@@ -22,7 +22,7 @@ export default function ReadingProgress() {
         left: 0,
         height: 3,
         width: `${p}%`,
-        background: "linear-gradient(90deg, var(--accent), var(--accent-2))",
+        background: "var(--fg)",
         zIndex: 50,
         transition: "width 0.1s linear",
       }}
