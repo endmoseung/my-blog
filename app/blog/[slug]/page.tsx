@@ -1,9 +1,13 @@
+import type { Metadata } from "next";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import rehypePrettyCode from "rehype-pretty-code";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAllPosts, getPostBySlug } from "@/lib/posts";
 import { mdxComponents } from "@/components/mdx/MDXComponents";
+import { jsonLdHtml } from "@/lib/json-ld";
+import { SITE_URL, SITE_NAME, SITE_DESC, SITE_AUTHOR, SITE_AUTHOR_GITHUB } from "@/lib/site";
+import PostCard from "@/components/PostCard";
 import ReadingProgress from "@/components/ReadingProgress";
 import Comments from "@/components/Comments";
 import FadeIn from "@/components/FadeIn";
@@ -12,13 +16,36 @@ export function generateStaticParams() {
   return getAllPosts().map((p) => ({ slug: p.slug }));
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   try {
     const post = getPostBySlug(slug);
-    return { title: `${post.title} — 내 블로그`, description: post.excerpt };
+    const published = post.date ? new Date(post.date).toISOString() : undefined;
+    return {
+      // template이 ' — 내 블로그'를 붙이므로 여기선 제목만.
+      title: post.title,
+      description: post.excerpt,
+      keywords: post.tags,
+      authors: [{ name: SITE_AUTHOR, url: SITE_AUTHOR_GITHUB }],
+      // 상대경로 — metadataBase가 절대 URL로 풀어준다. canonical은 alternates 아래에 둔다(top-level 아님).
+      alternates: { canonical: `/blog/${slug}` },
+      openGraph: {
+        type: "article",
+        title: post.title,
+        description: post.excerpt,
+        url: `/blog/${slug}`,
+        siteName: SITE_NAME,
+        locale: "ko_KR",
+        publishedTime: published,
+        // openGraph.authors는 문자열 배열(top-level authors는 객체 배열 — 다른 모양).
+        authors: [SITE_AUTHOR],
+        tags: post.tags,
+        // og:image는 opengraph-image.tsx에서 Next가 자동 주입하므로 여기 수동 지정하지 않는다.
+      },
+      twitter: { card: "summary_large_image", title: post.title, description: post.excerpt },
+    };
   } catch {
-    return { title: "내 블로그" };
+    return { title: SITE_NAME, description: SITE_DESC };
   }
 }
 
@@ -39,9 +66,70 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   const prev = idx > 0 ? all[idx - 1] : null;
   const next = idx >= 0 && idx < all.length - 1 ? all[idx + 1] : null;
 
+  // 관련 글 — 태그를 하나라도 공유하는 다른 글 최대 3개(겹치는 태그 수 우선).
+  const related = all
+    .filter((p) => p.slug !== slug && p.tags.some((t) => post.tags.includes(t)))
+    .sort((a, b) => {
+      const overlap = (p: typeof a) => p.tags.filter((t) => post.tags.includes(t)).length;
+      return overlap(b) - overlap(a);
+    })
+    .slice(0, 3);
+
+  const postUrl = `${SITE_URL}/blog/${slug}`;
+  const publishedISO = post.date ? new Date(post.date).toISOString() : undefined;
+
+  // BlogPosting — Google이 글·작성자·날짜를 리치 결과로 이해. 날짜는 반드시 ISO 8601.
+  const blogPostingLd = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.excerpt,
+    datePublished: publishedISO,
+    dateModified: publishedISO,
+    author: { "@type": "Person", name: SITE_AUTHOR, url: SITE_AUTHOR_GITHUB },
+    publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    mainEntityOfPage: { "@type": "WebPage", "@id": postUrl },
+    url: postUrl,
+    keywords: post.tags.join(", "),
+    // og:image와 동일한 동적 OG 라우트를 대표 이미지로.
+    image: `${postUrl}/opengraph-image`,
+  };
+
+  // BreadcrumbList — 마지막(현재 글) 항목은 item URL을 생략하는 게 schema.org 규약.
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "홈", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "블로그", item: `${SITE_URL}/blog` },
+      { "@type": "ListItem", position: 3, name: post.title },
+    ],
+  };
+
   return (
     <article style={{ maxWidth: 680, margin: "0 auto" }}>
+      {/* 구조화 데이터 — 스키마 타입당 <script> 1개. RSC 본문이라 크롤러가 HTML에서 본다. */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(blogPostingLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbLd) }} />
       <ReadingProgress />
+
+      {/* 시각적 breadcrumb — BreadcrumbList JSON-LD와 짝. */}
+      <nav aria-label="breadcrumb" style={{ marginBottom: 24, fontSize: ".82rem", color: "var(--muted)" }}>
+        <ol style={{ display: "flex", flexWrap: "wrap", gap: 6, listStyle: "none", padding: 0, margin: 0 }}>
+          <li>
+            <Link href="/" style={{ color: "var(--muted)" }}>홈</Link>
+          </li>
+          <li aria-hidden="true">/</li>
+          <li>
+            <Link href="/blog" style={{ color: "var(--muted)" }}>블로그</Link>
+          </li>
+          <li aria-hidden="true">/</li>
+          <li aria-current="page" style={{ color: "var(--fg)", fontWeight: 600 }}>
+            {post.title}
+          </li>
+        </ol>
+      </nav>
+
       <header style={{ textAlign: "center", marginBottom: 40 }}>
         <h1 style={{ fontWeight: 800, fontSize: "2.2rem", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
           {post.title}
@@ -111,6 +199,20 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           ← 글 목록으로
         </Link>
       </p>
+
+      {/* 관련 글 — 같은 태그를 공유하는 글로 내부 링크를 잇는다(link equity + 체류). */}
+      {related.length > 0 && (
+        <section style={{ marginTop: 56, paddingTop: 28, borderTop: "1px solid var(--line)" }}>
+          <h2 style={{ fontWeight: 800, fontSize: "1.2rem", letterSpacing: "-0.02em", marginBottom: 16 }}>
+            관련 글
+          </h2>
+          <div style={{ display: "grid", gap: 12 }}>
+            {related.map((p) => (
+              <PostCard key={p.slug} post={p} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <Comments postSlug={slug} />
     </article>

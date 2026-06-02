@@ -1,8 +1,23 @@
-export const metadata = { title: "소개 — 내 블로그" };
+import { jsonLdHtml } from "@/lib/json-ld";
+import { SITE_URL, SITE_DESC, SITE_AUTHOR, SITE_AUTHOR_GITHUB } from "@/lib/site";
+
+// template이 ' — 내 블로그'를 자동으로 붙인다.
+export const metadata = { title: "소개" };
 
 export default function About() {
+  // Person — 작성자를 검색엔진이 인물로 인식(E-E-A-T). sameAs로 외부 프로필 연결.
+  const personLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: SITE_AUTHOR,
+    url: SITE_URL,
+    sameAs: [SITE_AUTHOR_GITHUB],
+    description: SITE_DESC,
+  };
+
   return (
     <article style={{ lineHeight: 1.9, maxWidth: 680, margin: "0 auto" }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(personLd) }} />
       <h1 style={{ fontWeight: 800, fontSize: "2rem", marginBottom: 18, letterSpacing: "-0.02em" }}>
         안녕하세요 👋
       </h1>
@@ -12,7 +27,7 @@ export default function About() {
       </p>
       <p style={{ marginTop: 20 }}>
         <a
-          href="https://github.com/endmoseung"
+          href={SITE_AUTHOR_GITHUB}
           target="_blank"
           rel="noopener noreferrer"
           style={{ color: "var(--accent)", textDecoration: "underline", textUnderlineOffset: 3, fontWeight: 600 }}

@@ -1,7 +1,7 @@
 import SearchBox from "@/components/SearchBox";
 import { getSearchDocs } from "@/lib/posts";
 
-export const metadata = { title: "검색 — 내 블로그" };
+export const metadata = { title: "검색" };
 
 export default function SearchPage() {
   const docs = getSearchDocs();

@@ -1,7 +1,7 @@
 import TagFilter from "@/components/TagFilter";
 import { getAllPosts } from "@/lib/posts";
 
-export const metadata = { title: "글 — 내 블로그" };
+export const metadata = { title: "글" };
 
 export default function BlogIndex() {
   const posts = getAllPosts();

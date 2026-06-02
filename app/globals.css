@@ -28,6 +28,7 @@
   --color-accent: var(--accent);
   --color-card: var(--card);
   --color-line: var(--line);
+  --font-sans: var(--font-pretendard);
 }
 
 html {
