@@ -33,7 +33,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   const minRead = Math.max(1, Math.round(words / 200));
 
   return (
-    <article>
+    <article style={{ maxWidth: 680, margin: "0 auto" }}>
       <ReadingProgress />
       <header style={{ textAlign: "center", marginBottom: 40 }}>
         <h1 style={{ fontWeight: 800, fontSize: "2.2rem", letterSpacing: "-0.03em", lineHeight: 1.2 }}>

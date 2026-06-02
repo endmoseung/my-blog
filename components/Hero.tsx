@@ -1,8 +1,10 @@
 "use client";
 import { useEffect, useRef } from "react";
+import { makeNoise2D } from "@/lib/simplex";
 
-// 우리만의 인터랙티브 히어로 — 마우스를 따라 색색 원들이 부드럽게 모여드는 캔버스.
-// ryoppippi의 점묘 인물 아바타와 완전히 다른 연출(추상 컬러 도형).
+// 고급 히어로 — Simplex noise flow field 파티클.
+// 파티클이 noise 흐름을 타고 움직이며 컬러 트레일을 남기고,
+// 마우스 근처에선 흐름이 소용돌이치듯 휘어진다. 의존성 0, canvas 2D.
 export default function Hero() {
   const ref = useRef<HTMLCanvasElement>(null);
 
@@ -13,98 +15,112 @@ export default function Hero() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    let raf = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const noise = makeNoise2D(Math.floor(Date.parse("2026-06-02") % 9999) || 7);
 
-    type Dot = { x: number; y: number; hue: number; r: number };
-    const palette = [340, 45, 195, 280, 160]; // 핑크·옐로·시안·퍼플·민트
-    let dots: Dot[] = [];
+    type P = { x: number; y: number; hue: number; life: number };
+    let particles: P[] = [];
+    const palette = [330, 45, 195, 280, 165]; // 핑크·옐로·시안·퍼플·민트
+    const COUNT = 260;
+    const SCALE = 0.0016; // noise 공간 스케일(작을수록 큰 흐름)
+    const SPEED = 1.1;
+    const mouse = { x: -9999, y: -9999, active: false };
+    let raf = 0;
+    let t = 0;
+
+    const W = () => canvas.clientWidth;
+    const H = () => canvas.clientHeight;
 
     const resize = () => {
-      canvas.width = canvas.clientWidth * dpr;
-      canvas.height = canvas.clientHeight * dpr;
-      ctx.scale(dpr, dpr);
+      canvas.width = W() * dpr;
+      canvas.height = H() * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // 배경 한 번 칠하기(트레일 누적의 바탕)
+      ctx.fillStyle = "rgba(0,0,0,0)";
+      ctx.clearRect(0, 0, W(), H());
     };
-    const seed = () => {
-      const w = canvas.clientWidth, h = canvas.clientHeight;
-      dots = Array.from({ length: 28 }, (_, i) => ({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        hue: palette[i % palette.length] + (Math.random() * 24 - 12),
-        r: 10 + (i % 6) * 5,
-      }));
-    };
-    resize();
-    seed();
 
-    const mouse = { x: canvas.clientWidth / 2, y: canvas.clientHeight / 2, active: false };
+    const spawn = (): P => ({
+      x: Math.random() * W(),
+      y: Math.random() * H(),
+      hue: palette[Math.floor(Math.random() * palette.length)] + (Math.random() * 30 - 15),
+      life: 60 + Math.random() * 120,
+    });
+
+    resize();
+    particles = Array.from({ length: COUNT }, spawn);
+
     const onMove = (e: MouseEvent) => {
-      const rect = canvas.getBoundingClientRect();
-      mouse.x = e.clientX - rect.left;
-      mouse.y = e.clientY - rect.top;
+      const r = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - r.left;
+      mouse.y = e.clientY - r.top;
       mouse.active = true;
     };
     const onLeave = () => (mouse.active = false);
     canvas.addEventListener("mousemove", onMove);
     canvas.addEventListener("mouseleave", onLeave);
 
-    const draw = () => {
-      const w = canvas.clientWidth, h = canvas.clientHeight;
-      ctx.clearRect(0, 0, w, h);
+    const step = () => {
+      // 트레일을 서서히 지워 잔상 효과(완전 clear 대신 반투명 덮기)
+      ctx.fillStyle = "rgba(0,0,0,0.06)";
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.fillRect(0, 0, W(), H());
+      ctx.globalCompositeOperation = "lighter"; // 색이 겹치면 밝아짐(네온)
 
-      for (const d of dots) {
-        // 1) 도형끼리 서로 밀어내 고르게 퍼지게(분산력)
-        for (const o of dots) {
-          if (o === d) continue;
-          const ox = d.x - o.x, oy = d.y - o.y;
-          const od = Math.hypot(ox, oy) || 1;
-          const minGap = d.r + o.r + 14;
-          if (od < minGap) {
-            const push = (minGap - od) / minGap;
-            d.x += (ox / od) * push * 0.8;
-            d.y += (oy / od) * push * 0.8;
-          }
-        }
-        // 2) 마우스가 가까이 오면 살짝 끌어당김(부드러운 인터랙션)
+      t += 0.0015;
+      for (const p of particles) {
+        // noise field에서 각도 추출
+        const angle = noise(p.x * SCALE, p.y * SCALE + t) * Math.PI * 2;
+        let vx = Math.cos(angle) * SPEED;
+        let vy = Math.sin(angle) * SPEED;
+
+        // 마우스 근처면 흐름을 휘저음(소용돌이)
         if (mouse.active) {
-          const dx = mouse.x - d.x, dy = mouse.y - d.y;
-          const dist = Math.hypot(dx, dy) || 1;
-          if (dist < 220) {
-            d.x += (dx / dist) * (0.6 * (1 - dist / 220));
-            d.y += (dy / dist) * (0.6 * (1 - dist / 220));
+          const dx = p.x - mouse.x, dy = p.y - mouse.y;
+          const d = Math.hypot(dx, dy);
+          if (d < 160) {
+            const f = (1 - d / 160) * 2.2;
+            // 접선 방향으로 밀어 소용돌이
+            vx += (-dy / (d || 1)) * f;
+            vy += (dx / (d || 1)) * f;
           }
-        } else {
-          // 3) 평상시엔 아주 느린 둥둥 떠다님
-          d.x += Math.sin((d.hue + d.x) * 0.01) * 0.15;
-          d.y += Math.cos((d.hue + d.y) * 0.01) * 0.15;
         }
-        // 경계 안에 가두기
-        d.x = Math.max(d.r, Math.min(w - d.r, d.x));
-        d.y = Math.max(d.r, Math.min(h - d.r, d.y));
+
+        p.x += vx;
+        p.y += vy;
+        p.life -= 1;
 
         ctx.beginPath();
-        ctx.fillStyle = `hsl(${d.hue} 92% 64% / 0.82)`;
-        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${p.hue} 90% 62% / 0.9)`;
+        ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2);
         ctx.fill();
+
+        // 경계 밖이거나 수명 끝나면 재생성
+        if (p.x < 0 || p.x > W() || p.y < 0 || p.y > H() || p.life < 0) {
+          Object.assign(p, spawn());
+        }
       }
-      raf = requestAnimationFrame(draw);
+      ctx.globalCompositeOperation = "source-over";
+      raf = requestAnimationFrame(step);
     };
 
     if (reduce) {
-      // 모션 비활성: 한 프레임만 정적으로
-      const w = canvas.clientWidth, h = canvas.clientHeight;
-      ctx.clearRect(0, 0, w, h);
-      for (const d of dots) {
+      // 모션 비활성: noise field를 한 번만 정적으로 점묘
+      ctx.globalCompositeOperation = "lighter";
+      for (let i = 0; i < 1400; i++) {
+        const x = Math.random() * W(), y = Math.random() * H();
+        const hue = palette[i % palette.length];
         ctx.beginPath();
-        ctx.fillStyle = `hsl(${d.hue} 92% 64% / 0.82)`;
-        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${hue} 90% 62% / 0.5)`;
+        ctx.arc(x, y, 1.4, 0, Math.PI * 2);
         ctx.fill();
       }
+      ctx.globalCompositeOperation = "source-over";
     } else {
-      draw();
+      step();
     }
 
-    const onResize = () => { resize(); seed(); };
+    const onResize = () => { resize(); particles = Array.from({ length: COUNT }, spawn); };
     window.addEventListener("resize", onResize);
     return () => {
       cancelAnimationFrame(raf);
@@ -121,11 +137,10 @@ export default function Hero() {
         aria-hidden
         style={{
           width: "100%",
-          height: 280,
+          height: 300,
           borderRadius: 24,
           display: "block",
-          background:
-            "linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, var(--card)), var(--card))",
+          background: "radial-gradient(circle at 30% 30%, #1a1530, #0d0b16)",
           border: "1px solid var(--line)",
           cursor: "crosshair",
         }}
@@ -136,7 +151,7 @@ export default function Hero() {
         여긴 내 생각을 푸는 곳이야.
       </h1>
       <p style={{ color: "var(--muted)", marginTop: 12, fontSize: "clamp(.95rem, 3vw, 1.05rem)" }}>
-        위 그림에 마우스를 올려봐 — 따라온다 🎈
+        위 그림에 마우스를 휘저어봐 — 흐름이 따라 움직여 🌊
       </p>
     </section>
   );
