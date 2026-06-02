@@ -44,3 +44,27 @@ export function getAllPosts(): PostMeta[] {
 export function getPostBySlug(slug: string): Post {
   return read(slug);
 }
+
+// 검색용 doc — 본문에서 MDX/마크다운 기호를 대충 걷어낸 plain text 포함
+export function getSearchDocs() {
+  return fs
+    .readdirSync(POSTS_DIR)
+    .filter((f) => f.endsWith(".mdx"))
+    .map((f) => {
+      const post = read(f.replace(/\.mdx$/, ""));
+      const plain = post.content
+        .replace(/```[\s\S]*?```/g, " ") // 코드블록 제거
+        .replace(/<[^>]+>/g, " ") // JSX 태그 제거
+        .replace(/[#>*`_\-[\]()]/g, " ") // 마크다운 기호
+        .replace(/\s+/g, " ")
+        .trim();
+      return {
+        slug: post.slug,
+        title: post.title,
+        excerpt: post.excerpt,
+        tags: post.tags,
+        date: post.date,
+        body: plain,
+      };
+    });
+}

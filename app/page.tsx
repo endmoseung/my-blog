@@ -11,12 +11,14 @@ export default function Home() {
     <>
       {/* 심플 타이포 헤더 (junghyeonsu의 "All Posts." 결) */}
       <FadeIn>
-        <header style={{ textAlign: "center", padding: "32px 0 44px" }}>
-          <h1 style={{ fontSize: "clamp(2.4rem, 7vw, 3.4rem)", fontWeight: 800, letterSpacing: "-0.04em", fontStyle: "italic" }}>
-            All Posts.
+        <header style={{ padding: "40px 0 48px" }}>
+          <h1 style={{ fontSize: "clamp(1.9rem, 5vw, 2.6rem)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.25 }}>
+            요즘 무슨 생각 하며 사는지,
+            <br />
+            여기에 적어둡니다.
           </h1>
-          <p style={{ color: "var(--muted)", marginTop: 10, fontSize: "1rem" }}>
-            생각을 푸는 곳. 천천히 읽어줘.
+          <p style={{ color: "var(--muted)", marginTop: 14, fontSize: "1.02rem" }}>
+            천천히 읽어주시면 좋겠어요.
           </p>
         </header>
       </FadeIn>

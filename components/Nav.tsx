@@ -13,6 +13,7 @@ export default function Nav() {
       <div className="flex items-center gap-4 sm:gap-5" style={{ fontWeight: 600 }}>
         <Link href="/blog" className="nav-link">글</Link>
         <Link href="/about" className="nav-link">소개</Link>
+        <Link href="/search" className="nav-link" aria-label="검색" style={{ fontSize: "1.05rem" }}>🔍</Link>
         <ThemeToggle />
       </div>
     </nav>
