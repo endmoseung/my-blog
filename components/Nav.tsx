@@ -1,5 +1,6 @@
 import Link from "next/link";
 import ThemeToggle from "./ThemeToggle";
+import NavLink from "./NavLink";
 
 export default function Nav() {
   return (
@@ -10,10 +11,10 @@ export default function Nav() {
       >
         내 블로그
       </Link>
-      <div className="flex items-center gap-4 sm:gap-5" style={{ fontWeight: 600 }}>
-        <Link href="/blog" className="nav-link">글</Link>
-        <Link href="/about" className="nav-link">소개</Link>
-        <Link href="/search" className="nav-link" aria-label="검색" style={{ fontSize: "1.05rem" }}>🔍</Link>
+      <div className="flex items-center gap-4 sm:gap-5">
+        <NavLink href="/blog">글</NavLink>
+        <NavLink href="/about">소개</NavLink>
+        <NavLink href="/search" ariaLabel="검색" fontSize="1.05rem">🔍</NavLink>
         <ThemeToggle />
       </div>
     </nav>

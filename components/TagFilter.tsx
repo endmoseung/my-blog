@@ -17,7 +17,7 @@ export default function TagFilter({ posts, tags }: { posts: PostMeta[]; tags: st
         borderRadius: 999,
         border: "1px solid var(--line)",
         background: on ? "var(--accent)" : "transparent",
-        color: on ? "#fff" : "var(--fg)",
+        color: on ? "var(--bg)" : "var(--fg)",
         fontWeight: 700,
         fontSize: ".85rem",
         cursor: "pointer",
@@ -34,11 +34,17 @@ export default function TagFilter({ posts, tags }: { posts: PostMeta[]; tags: st
         {chip("전체", !active, () => setActive(null))}
         {tags.map((t) => chip(`#${t}`, active === t, () => setActive(t)))}
       </div>
-      <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))" }}>
-        {shown.map((p) => (
-          <PostCard key={p.slug} post={p} large={!active && p.featured} />
-        ))}
-      </div>
+      {shown.length === 0 ? (
+        <p style={{ color: "var(--muted)", fontSize: ".95rem", padding: "20px 0" }}>
+          {active ? `“#${active}” 태그에 해당하는 글이 아직 없어요.` : "아직 글이 없어요. 곧 채울게요!"}
+        </p>
+      ) : (
+        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))" }}>
+          {shown.map((p) => (
+            <PostCard key={p.slug} post={p} large={!active && p.featured} />
+          ))}
+        </div>
+      )}
     </>
   );
 }

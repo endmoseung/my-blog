@@ -21,18 +21,10 @@ export default function ThemeToggle() {
   const isDark = theme === "dark";
   return (
     <button
-      aria-label="테마 전환"
+      aria-label={isDark ? "밝은 테마로 전환" : "어두운 테마로 전환"}
+      className="theme-toggle"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      style={{
-        fontSize: 18,
-        background: "none",
-        border: 0,
-        cursor: "pointer",
-        lineHeight: 1,
-        transition: "transform 0.2s ease",
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2) rotate(12deg)")}
-      onMouseLeave={(e) => (e.currentTarget.style.transform = "none")}
+      style={{ fontSize: 18, background: "none", border: 0, cursor: "pointer", lineHeight: 1 }}
     >
       {isDark ? "☀️" : "🌙"}
     </button>

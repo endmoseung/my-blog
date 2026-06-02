@@ -20,7 +20,7 @@ export type SearchHit = {
   score: number;
 };
 
-// 한글/영문/숫자 단위로 토큰화 (2글자 이상)
+// 한글/영문/숫자 단위로 토큰화 (1글자 이상 — 한글 한 글자도 의미 있어 허용)
 function tokenize(text: string): string[] {
   return (text.toLowerCase().match(/[가-힣a-z0-9]+/g) ?? []).filter((t) => t.length >= 1);
 }

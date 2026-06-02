@@ -47,7 +47,14 @@ create policy "anyone can insert comment"
   on public.comments for insert
   with check (is_hidden = false);
 
--- 공개(anon)는 UPDATE/DELETE 불가 → 정책을 안 만들면 기본 거부.
+-- 공개(anon)는 UPDATE/DELETE 불가. RLS는 정책이 없으면 기본 거부지만,
+-- 의도를 명시적으로 드러내기 위해 거부 정책을 박아둔다(미래에 정책이 추가돼도 안전).
+create policy "anon cannot update comment"
+  on public.comments for update
+  using (false);
+create policy "anon cannot delete comment"
+  on public.comments for delete
+  using (false);
 -- 삭제·숨김은 service_role(서버 측 관리자 키)로만 수행한다.
 
 -- 리액션: 누구나 읽기
@@ -83,3 +90,21 @@ select
   ) as reactions
 from public.comments c
 where c.is_hidden = false;
+
+-- ============================================================
+-- 5) Rate limit RPC — DB의 now() 기준으로 최근 N초 댓글 수를 센다.
+--    클라이언트/서버 시간 차이에 흔들리지 않게 서버 시간으로 판단.
+-- ============================================================
+create or replace function public.recent_comment_count(p_ip_hash text, p_seconds int)
+returns int
+language sql
+security definer
+set search_path = public
+as $$
+  select count(*)::int
+  from public.comments
+  where ip_hash = p_ip_hash
+    and created_at >= now() - make_interval(secs => p_seconds);
+$$;
+
+grant execute on function public.recent_comment_count(text, int) to anon, authenticated;

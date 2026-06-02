@@ -11,6 +11,8 @@ export default function SearchBox({ docs }: { docs: SearchDoc[] }) {
     <div>
       <input
         autoFocus
+        type="search"
+        aria-label="글 검색"
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="무엇이든 검색해보세요 — 제목, 내용, 태그…"
@@ -27,7 +29,7 @@ export default function SearchBox({ docs }: { docs: SearchDoc[] }) {
         }}
       />
 
-      <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+      <div role="region" aria-live="polite" aria-label="검색 결과" style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
         {q.trim() === "" ? (
           <p style={{ color: "var(--muted)", fontSize: ".95rem" }}>
             검색어를 입력하면 글을 찾아드려요.

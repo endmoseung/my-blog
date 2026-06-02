@@ -29,10 +29,27 @@ export async function getComments(postSlug: string): Promise<CommentNode[]> {
   const rows = data as Comment[];
   const byId = new Map<string, CommentNode>();
   rows.forEach((r) => byId.set(r.id, { ...r, children: [] }));
+
+  // parent_id가 자기 자신을 가리키는 경우(self-loop)는 끊어서 루트로
+  // 순환(A→B→A)은 루트까지 거슬러 올라가며 visited로 감지해 끊는다
+  const reachesRoot = (start: CommentNode): boolean => {
+    const seen = new Set<string>();
+    let cur: CommentNode | undefined = start;
+    while (cur && cur.parent_id) {
+      if (seen.has(cur.id)) return false; // 순환 발견
+      seen.add(cur.id);
+      cur = byId.get(cur.parent_id);
+    }
+    return true;
+  };
+
   const roots: CommentNode[] = [];
   byId.forEach((node) => {
-    if (node.parent_id && byId.has(node.parent_id)) {
-      byId.get(node.parent_id)!.children.push(node);
+    const parent = node.parent_id ? byId.get(node.parent_id) : undefined;
+    // 부모가 (a) 없거나 (b) 조회에서 빠졌거나(숨김) (c) 자기 자신이거나 (d) 순환이면 루트로 승격.
+    // 단 부모가 같은 글에 있을 때만 자식으로 붙여 "고아 대댓글이 엉뚱한 곳에 붙는" 일을 막는다.
+    if (parent && parent.id !== node.id && parent.post_slug === node.post_slug && reachesRoot(node)) {
+      parent.children.push(node);
     } else {
       roots.push(node);
     }
@@ -40,9 +57,11 @@ export async function getComments(postSlug: string): Promise<CommentNode[]> {
   return roots;
 }
 
-// IP를 해시로만 저장(원문 미보관) — rate limit·중복 추적용
+// IP를 해시로만 저장(원문 미보관) — rate limit·중복 추적용.
+// salt는 환경변수 필수. 없으면 약한 해시라 차라리 막는 게 안전(설정 누락을 빌드/런타임에 드러냄).
 function hashIp(ip: string): string {
-  const salt = process.env.IP_HASH_SALT ?? "blog-default-salt";
+  const salt = process.env.IP_HASH_SALT;
+  if (!salt) throw new Error("IP_HASH_SALT 환경변수가 필요합니다(.env.local 참고).");
   return crypto.createHash("sha256").update(ip + salt).digest("hex").slice(0, 32);
 }
 
@@ -68,16 +87,22 @@ export async function addComment(opts: {
   const sb = getPublicClient();
   if (!sb) return { ok: false, error: "댓글 기능이 아직 설정되지 않았어." };
 
-  const ipHash = hashIp(opts.ip);
+  let ipHash: string;
+  try {
+    ipHash = hashIp(opts.ip);
+  } catch {
+    return { ok: false, error: "댓글 기능이 아직 설정되지 않았어." };
+  }
 
-  // 2) rate limit — 최근 60초에 같은 IP가 3개 이상이면 거부
-  const since = new Date(Date.now() - 60_000).toISOString();
-  const { count } = await sb
-    .from("comments")
-    .select("id", { count: "exact", head: true })
-    .eq("ip_hash", ipHash)
-    .gte("created_at", since);
-  if ((count ?? 0) >= 3) return { ok: false, error: "조금 천천히! 잠시 후 다시 시도해줘." };
+  // 2) rate limit — 최근 60초에 같은 IP가 3개 이상이면 거부.
+  //    DB의 now()로 윈도우를 판단해 클라이언트/서버 시간 차이에 안 흔들리게 한다(RPC).
+  const { data: recent, error: rlErr } = await sb.rpc("recent_comment_count", {
+    p_ip_hash: ipHash,
+    p_seconds: 60,
+  });
+  if (!rlErr && typeof recent === "number" && recent >= 3) {
+    return { ok: false, error: "조금 천천히! 잠시 후 다시 시도해줘." };
+  }
 
   const { error } = await sb.from("comments").insert({
     post_slug: opts.postSlug,

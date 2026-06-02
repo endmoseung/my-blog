@@ -33,7 +33,7 @@ export function getAllPosts(): PostMeta[] {
     .readdirSync(POSTS_DIR)
     .filter((f) => f.endsWith(".mdx"))
     .map((f) => read(f.replace(/\.mdx$/, "")))
-    .sort((a, b) => (a.date < b.date ? 1 : -1))
+    .sort((a, b) => (a.date === b.date ? a.slug.localeCompare(b.slug) : a.date < b.date ? 1 : -1))
     .map((p) => {
       const { content, ...meta } = p;
       void content;

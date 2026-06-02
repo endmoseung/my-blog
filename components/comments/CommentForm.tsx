@@ -66,6 +66,7 @@ export default function CommentForm({
       />
       <input
         name="authorName"
+        aria-label="이름"
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="이름"
@@ -75,6 +76,7 @@ export default function CommentForm({
       />
       <textarea
         name="body"
+        aria-label={compact ? "답글 내용" : "댓글 내용"}
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder={compact ? "답글을 남겨봐…" : "댓글을 남겨봐 — 로그인 필요 없어 :)"}
@@ -88,12 +90,13 @@ export default function CommentForm({
         <button
           type="submit"
           disabled={pending}
+          aria-busy={pending}
           style={{
             padding: "8px 18px",
             borderRadius: 999,
             border: 0,
             background: "var(--accent)",
-            color: "#fff",
+            color: "var(--bg)",
             fontWeight: 700,
             fontSize: ".9rem",
             cursor: pending ? "default" : "pointer",

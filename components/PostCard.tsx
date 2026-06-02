@@ -69,7 +69,7 @@ export default function PostCard({ post, large = false }: { post: PostMeta; larg
       >
         {post.excerpt}
       </p>
-      <time style={{ color: "var(--muted)", fontSize: ".78rem", display: "block", marginTop: 12 }}>
+      <time dateTime={post.date} style={{ color: "var(--muted)", fontSize: ".78rem", display: "block", marginTop: 12 }}>
         {post.date}
       </time>
     </Link>

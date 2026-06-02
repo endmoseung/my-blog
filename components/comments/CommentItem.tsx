@@ -2,10 +2,15 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { CommentNode } from "@/lib/comments";
-import { reactToComment } from "@/app/actions/comments";
+import { reactToComment, hideComment } from "@/app/actions/comments";
 import CommentForm from "./CommentForm";
 
+const ADMIN_KEY = "blog_admin_token";
+
 const EMOJIS = ["❤️", "👍", "😂", "🎉", "🤔"];
+const EMOJI_LABEL: Record<string, string> = {
+  "❤️": "좋아요", "👍": "추천", "😂": "웃겨요", "🎉": "축하", "🤔": "음…",
+};
 const REACTOR_KEY = "blog_reactor_key";
 
 function getReactorKey(): string {
@@ -55,6 +60,26 @@ export default function CommentItem({
     });
   }
 
+  // 관리자 삭제 — 토큰을 한 번 입력해 localStorage에 보관(노출 X), 이후 버튼으로 숨김 처리.
+  function adminDelete() {
+    let token = typeof window !== "undefined" ? localStorage.getItem(ADMIN_KEY) : null;
+    if (!token) {
+      token = window.prompt("관리자 토큰을 입력하세요 (ADMIN_TOKEN)");
+      if (!token) return;
+      localStorage.setItem(ADMIN_KEY, token);
+    }
+    if (!window.confirm("이 댓글을 숨길까요?")) return;
+    startTransition(async () => {
+      const res = await hideComment(comment.id, token!, postSlug);
+      if (!res.ok) {
+        localStorage.removeItem(ADMIN_KEY);
+        window.alert("권한이 없거나 실패했어요. 토큰을 다시 확인해주세요.");
+        return;
+      }
+      router.refresh();
+    });
+  }
+
   return (
     <div style={{ marginLeft: depth > 0 ? 20 : 0 }}>
       <div
@@ -96,6 +121,7 @@ export default function CommentItem({
               <button
                 key={e}
                 onClick={() => react(e)}
+                aria-label={`${EMOJI_LABEL[e] ?? "반응"}${cnt > 0 ? ` ${cnt}개` : ""}`}
                 style={{
                   padding: "3px 9px",
                   borderRadius: 999,
@@ -113,11 +139,20 @@ export default function CommentItem({
           {depth < 3 && (
             <button
               onClick={() => setReplying((v) => !v)}
+              aria-expanded={replying}
               style={{ marginLeft: 4, background: "none", border: 0, color: "var(--muted)", fontSize: ".82rem", fontWeight: 600, cursor: "pointer" }}
             >
               답글
             </button>
           )}
+          <button
+            onClick={adminDelete}
+            title="관리자 숨김"
+            aria-label="관리자: 이 댓글 숨기기"
+            style={{ background: "none", border: 0, color: "var(--muted)", fontSize: ".75rem", cursor: "pointer", opacity: 0.5 }}
+          >
+            숨김
+          </button>
         </div>
 
         {replying && (
