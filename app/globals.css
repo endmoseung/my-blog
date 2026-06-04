@@ -31,8 +31,10 @@
   --font-sans: var(--font-pretendard);
 }
 
+/* 전역 smooth는 끈다 — 페이지 전환 시 "맨 위로" 자동 스크롤까지 느릿하게 만들어
+   헤더 밑에서 멈추는 듯한 어색함을 유발. 페이지 이동은 즉시 최상단으로. */
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
 }
 
 /* 키보드 포커스 — 모든 인터랙티브 요소에 또렷한 outline (마우스 클릭엔 안 뜸) */
