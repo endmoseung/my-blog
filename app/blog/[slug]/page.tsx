@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 import { getAllPosts, getPostBySlug } from "@/lib/posts";
 import { mdxComponents } from "@/components/mdx/MDXComponents";
 import { jsonLdHtml } from "@/lib/json-ld";
-import { SITE_URL, SITE_NAME, SITE_DESC, SITE_AUTHOR, SITE_AUTHOR_GITHUB } from "@/lib/site";
+import { SITE_URL, SITE_NAME, SITE_DESC, SITE_AUTHOR, SITE_AUTHOR_GITHUB, postUrl as makePostUrl } from "@/lib/site";
 import PostCard from "@/components/PostCard";
 import ReadingProgress from "@/components/ReadingProgress";
 import Comments from "@/components/Comments";
@@ -16,8 +16,21 @@ export function generateStaticParams() {
   return getAllPosts().map((p) => ({ slug: p.slug }));
 }
 
+// Next 16은 동적 라우트의 params.slug를 자동 디코딩하지 않는다.
+// 한글·점 등이 든 slug은 "%EC%A0%80..." 처럼 인코딩된 채 도착하므로
+// 파일명(저는-개발자입니다.mdx)과 매칭하려면 직접 디코딩해야 한다.
+// 잘못된 퍼센트 시퀀스는 decodeURIComponent가 throw → 원본을 그대로 쓴다.
+function decodeSlug(raw: string): string {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeSlug(rawSlug);
   try {
     const post = getPostBySlug(slug);
     const published = post.date ? new Date(post.date).toISOString() : undefined;
@@ -50,7 +63,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeSlug(rawSlug);
   let post;
   try {
     post = getPostBySlug(slug);
@@ -75,7 +89,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
     })
     .slice(0, 3);
 
-  const postUrl = `${SITE_URL}/blog/${slug}`;
+  const postUrl = makePostUrl(slug);
   const publishedISO = post.date ? new Date(post.date).toISOString() : undefined;
 
   // BlogPosting — Google이 글·작성자·날짜를 리치 결과로 이해. 날짜는 반드시 ISO 8601.
@@ -167,8 +181,9 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         />
       </FadeIn>
 
-      {/* 이전·다음 글 내비 */}
+      {/* 이전·다음 글 내비 — 모바일에선 globals.css의 .post-nav 규칙으로 세로 스택 */}
       <nav
+        className="post-nav"
         style={{
           display: "flex",
           gap: 12,

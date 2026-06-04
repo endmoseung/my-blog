@@ -1,5 +1,5 @@
 import { getAllPosts } from "@/lib/posts";
-import { SITE_URL, SITE_NAME, SITE_DESC } from "@/lib/site";
+import { SITE_URL, SITE_NAME, SITE_DESC, postUrl } from "@/lib/site";
 
 // 의존성 없이 직접 RSS 2.0 XML 생성
 function escapeXml(s: string): string {
@@ -15,7 +15,7 @@ export async function GET() {
   const posts = getAllPosts();
   const items = posts
     .map((p) => {
-      const url = `${SITE_URL}/blog/${p.slug}`;
+      const url = postUrl(p.slug);
       const pubDate = new Date(p.date).toUTCString();
       return `    <item>
       <title>${escapeXml(p.title)}</title>
