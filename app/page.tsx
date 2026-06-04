@@ -34,17 +34,32 @@ export default function Home() {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(websiteLd) }} />
-      {/* 심플 타이포 헤더 (junghyeonsu의 "All Posts." 결) */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml(websiteLd) }}
+      />
       <FadeIn>
         <header style={{ padding: "40px 0 48px" }}>
-          <h1 style={{ fontSize: "clamp(1.9rem, 5vw, 2.6rem)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.25 }}>
-            요즘 무슨 생각 하며 사는지,
+          <h1
+            style={{
+              fontSize: "clamp(1.9rem, 5vw, 2.6rem)",
+              fontWeight: 800,
+              letterSpacing: "-0.03em",
+              lineHeight: 1.25,
+            }}
+          >
+            내 삶 그리고 생각,
             <br />
-            여기에 적어둡니다.
+            기록하는 공간
           </h1>
-          <p style={{ color: "var(--muted)", marginTop: 14, fontSize: "1.02rem" }}>
-            천천히 읽어주시면 좋겠어요.
+          <p
+            style={{
+              color: "var(--muted)",
+              marginTop: 14,
+              fontSize: "1.02rem",
+            }}
+          >
+            사람을 좋아하고, 생각을 나누는 것을 좋아합니다.
           </p>
         </header>
       </FadeIn>
@@ -64,10 +79,20 @@ export default function Home() {
 
       <section>
         <h2 className="section-label">All</h2>
-        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", alignItems: "stretch" }}>
+        <div
+          className="grid gap-4"
+          style={{
+            gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))",
+            alignItems: "stretch",
+          }}
+        >
           {rest.map((p, i) => (
             // delay는 위 6개까지만 단계적으로(64개 누적되면 끝 카드가 너무 늦게 뜸). height:100%로 카드가 셀을 채워 높이가 정렬됨.
-            <FadeIn key={p.slug} delay={Math.min(i, 6) * 0.04} style={{ height: "100%" }}>
+            <FadeIn
+              key={p.slug}
+              delay={Math.min(i, 6) * 0.04}
+              style={{ height: "100%" }}
+            >
               <PostCard post={p} />
             </FadeIn>
           ))}
