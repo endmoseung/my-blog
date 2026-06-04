@@ -69,7 +69,7 @@ export default function TagFilter({ posts, tags }: { posts: PostMeta[]; tags: Ta
           {active ? `“#${active}” 태그에 해당하는 글이 아직 없어요.` : "아직 글이 없어요. 곧 채울게요!"}
         </p>
       ) : (
-        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))" }}>
+        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill,minmax(min(260px,100%),1fr))" }}>
           {shown.map((p) => (
             <PostCard key={p.slug} post={p} large={!active && p.featured} />
           ))}

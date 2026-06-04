@@ -82,7 +82,9 @@ export default function Home() {
         <div
           className="grid gap-4"
           style={{
-            gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))",
+            // min(260px,100%) — 컨테이너가 260px보다 좁은 모바일에선 100%를 택해
+            // 트랙이 줄어든다. 그냥 260px이면 좁은 화면에서 그리드가 안 줄고 가로 오버플로.
+            gridTemplateColumns: "repeat(auto-fill,minmax(min(260px,100%),1fr))",
             alignItems: "stretch",
           }}
         >

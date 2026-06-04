@@ -102,6 +102,19 @@ pre code {
   margin-bottom: 14px;
 }
 
+/* 카드 — grid/flex item은 min-width:auto 기본값이라 콘텐츠 최소폭 밑으로 안 줄어든다.
+   그래서 좁은 모바일에서 1fr 트랙이 카드 콘텐츠 폭만큼 부풀어 가로 오버플로가 났다.
+   min-width:0 으로 트랙 안에서 줄어들 수 있게 풀어준다. */
+.post-card {
+  min-width: 0;
+}
+/* 카드 안 긴 한글/URL이 줄바꿈 없이 이어지면 다시 트랙을 밀어낸다 — 강제로 끊는다. */
+.post-card h3,
+.post-card p {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 /* 카드 호버 — 살짝 떠오르며 컬러 그림자 */
 .post-card:hover {
   transform: translateY(-3px);
@@ -126,6 +139,63 @@ pre code {
 }
 .nav-link:hover::after {
   width: 100%;
+}
+
+/* 본문(MDX) 미디어 — 이미지·표가 좁은 화면을 넘지 않게.
+   표는 줄일 수 없으니 가로 스크롤로 가둔다(페이지 전체가 흔들리지 않게). */
+.prose img,
+article img {
+  max-width: 100%;
+  height: auto;
+}
+article table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+/* 본문 긴 단어/URL이 코드블록 밖에서 가로 스크롤을 만들지 않게 */
+article p,
+article li,
+article h1,
+article h2,
+article h3 {
+  overflow-wrap: anywhere;
+}
+
+/* ── 모바일 (≤640px) ───────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* 좌우 24px 패딩은 좁은 화면에서 본문 폭을 과하게 깎는다 → 16px */
+  main,
+  footer,
+  nav.site-nav {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+  /* 큰 고정 제목들이 폭을 넘지 않게 — 인라인 2.2rem을 모바일에서 눌러준다 */
+  article > header h1 {
+    font-size: clamp(1.5rem, 7vw, 2.2rem) !important;
+  }
+  /* 코드블록 패딩 축소로 가독 폭 확보 */
+  pre {
+    padding: 14px 14px;
+    font-size: 0.82rem;
+  }
+  /* 이전/다음 글 내비 — 두 글을 좌우로 두면 각 제목이 뭉개진다 → 세로 스택 */
+  nav.post-nav {
+    flex-direction: column;
+  }
+  nav.post-nav a {
+    text-align: left !important;
+  }
+  /* 헤더 내비의 탭 영역 — 글자 크기는 그대로 두고 세로 탭 영역만 44px로.
+     아이콘(🔍·🌙)이 18~25px라 손가락으로 정확히 누르기 어려웠다. */
+  nav.site-nav a,
+  nav.site-nav button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
