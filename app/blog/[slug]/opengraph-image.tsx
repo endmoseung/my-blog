@@ -4,9 +4,17 @@ import { join } from "node:path";
 import { getAllPosts, getPostBySlug } from "@/lib/posts";
 import { SITE_NAME } from "@/lib/site";
 
-export const alt = "블로그 글";
+export const alt = "블로그 글 대표 이미지";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+function decodeSlug(raw: string): string {
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
 
 // 빌드타임 정적 생성 — 포스트별 OG를 빌드 시 1회 렌더. Satori가 실제 쓰인 글자만 자동 서브셋하므로
 // 풀 woff를 넘겨도 최종 PNG는 가볍고, 런타임 비용이 0이다.
@@ -16,7 +24,8 @@ export function generateStaticParams() {
 
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   // v16: params는 Promise라 await 필수.
-  const { slug } = await params;
+  const { slug: rawSlug } = await params;
+  const slug = decodeSlug(rawSlug);
   const post = getPostBySlug(slug);
 
   // Satori는 woff2 ✗ → static woff. 제목은 Bold, 본문(excerpt)은 Regular.

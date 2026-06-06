@@ -5,9 +5,20 @@ import { getAllPosts } from "@/lib/posts";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { SITE_URL, SITE_NAME, SITE_DESC } from "@/lib/site";
 
-// 홈은 title.absolute로 ' — 내 블로그' 접미사를 막아 '내 블로그 — 내 블로그' 중복을 피한다.
+// 홈은 title.absolute로 ' — 모승 블로그' 접미사를 막아 '모승 블로그 — 모승 블로그' 중복을 피한다.
 export const metadata: Metadata = {
   title: { absolute: SITE_NAME },
+  description: SITE_DESC,
+  alternates: { canonical: SITE_URL },
+  openGraph: {
+    title: SITE_NAME,
+    description: SITE_DESC,
+    url: "/",
+    type: "website",
+    siteName: SITE_NAME,
+    locale: "ko_KR",
+  },
+  twitter: { card: "summary_large_image", title: SITE_NAME, description: SITE_DESC },
 };
 
 export default function Home() {

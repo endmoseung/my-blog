@@ -1,7 +1,25 @@
+import type { Metadata } from "next";
 import TagFilter from "@/components/TagFilter";
 import { getAllPosts } from "@/lib/posts";
+import { SITE_NAME, absoluteUrl } from "@/lib/site";
 
-export const metadata = { title: "글" };
+const title = "글";
+const description = `${SITE_NAME}의 전체 글 목록입니다. 개발, 회고, 프로젝트 경험을 태그별로 탐색할 수 있습니다.`;
+
+export const metadata: Metadata = {
+  title,
+  description,
+  alternates: { canonical: absoluteUrl("/blog") },
+  openGraph: {
+    title: `${title} — ${SITE_NAME}`,
+    description,
+    url: "/blog",
+    type: "website",
+    siteName: SITE_NAME,
+    locale: "ko_KR",
+  },
+  twitter: { card: "summary_large_image", title: `${title} — ${SITE_NAME}`, description },
+};
 
 export default function BlogIndex() {
   const posts = getAllPosts();
