@@ -117,6 +117,20 @@ pre code {
   word-break: break-word;
 }
 
+/* 홈 카드 제목은 줄 수를 고정하고 말줄임표를 붙여, 긴 제목이 카드 안에서 애매하게 잘려 보이지 않게 한다. */
+.post-card-title {
+  display: -webkit-box;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-box-orient: vertical;
+}
+.post-card--default .post-card-title {
+  -webkit-line-clamp: 2;
+}
+.post-card--large .post-card-title {
+  -webkit-line-clamp: 3;
+}
+
 /* 카드 호버 — 살짝 떠오르며 컬러 그림자 */
 .post-card:hover {
   transform: translateY(-3px);

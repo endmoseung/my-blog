@@ -13,6 +13,7 @@ import {
   SITE_AUTHOR,
   SITE_AUTHOR_GITHUB,
   postOgImageUrl,
+  postPath,
   postUrl as makePostUrl,
 } from "@/lib/site";
 import PostCard from "@/components/PostCard";
@@ -229,7 +230,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         }}
       >
         {prev ? (
-          <Link href={`/blog/${prev.slug}`} style={{ flex: 1, textDecoration: "none", color: "var(--fg)" }}>
+          <Link href={postPath(prev.slug)} style={{ flex: 1, textDecoration: "none", color: "var(--fg)" }}>
             <span style={{ color: "var(--muted)", fontSize: ".75rem", display: "block" }}>← 이전 글</span>
             <span style={{ fontWeight: 700, fontSize: ".95rem" }}>{prev.title}</span>
           </Link>
@@ -237,7 +238,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           <span style={{ flex: 1 }} />
         )}
         {next ? (
-          <Link href={`/blog/${next.slug}`} style={{ flex: 1, textAlign: "right", textDecoration: "none", color: "var(--fg)" }}>
+          <Link href={postPath(next.slug)} style={{ flex: 1, textAlign: "right", textDecoration: "none", color: "var(--fg)" }}>
             <span style={{ color: "var(--muted)", fontSize: ".75rem", display: "block" }}>다음 글 →</span>
             <span style={{ fontWeight: 700, fontSize: ".95rem" }}>{next.title}</span>
           </Link>

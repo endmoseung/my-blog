@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { PostMeta } from "@/lib/posts";
+import { postPath } from "@/lib/site";
 
 // 일반 카드는 태그를 한 줄로 고정 — 앞 N개만 칩으로, 나머지는 "+N"으로 접어 제목 시작선을 카드마다 맞춘다.
 const MAX_CHIPS = 3;
@@ -25,8 +26,8 @@ const tagChip = (t: string) => (
 export default function PostCard({ post, large = false }: { post: PostMeta; large?: boolean }) {
   return (
     <Link
-      href={`/blog/${post.slug}`}
-      className="post-card"
+      href={postPath(post.slug)}
+      className={`post-card ${large ? "post-card--large" : "post-card--default"}`}
       style={{
         display: "flex",
         flexDirection: "column",
@@ -81,6 +82,7 @@ export default function PostCard({ post, large = false }: { post: PostMeta; larg
         )}
       </div>
       <h3
+        className="post-card-title"
         style={{
           fontWeight: 800,
           fontSize: large ? "1.6rem" : "1.12rem",

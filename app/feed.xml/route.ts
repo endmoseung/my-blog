@@ -12,7 +12,7 @@ function escapeXml(s: string): string {
 }
 
 export async function GET() {
-  const posts = getAllPosts();
+  const posts = getAllPosts().filter((p) => !p.noindex);
   const items = posts
     .map((p) => {
       const url = postUrl(p.slug);
@@ -21,7 +21,8 @@ export async function GET() {
       <title>${escapeXml(p.title)}</title>
       <link>${url}</link>
       <guid isPermaLink="true">${url}</guid>
-      <description>${escapeXml(p.excerpt)}</description>
+      <description>${escapeXml(p.description)}</description>
+      ${p.tags.map((t) => `<category>${escapeXml(t)}</category>`).join("\n      ")}
       <pubDate>${pubDate}</pubDate>
     </item>`;
     })

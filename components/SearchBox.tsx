@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { search, type SearchDoc } from "@/lib/search";
+import { postPath } from "@/lib/site";
 
 export default function SearchBox({ docs }: { docs: SearchDoc[] }) {
   const [q, setQ] = useState("");
@@ -44,7 +45,7 @@ export default function SearchBox({ docs }: { docs: SearchDoc[] }) {
             {hits.map((h) => (
               <Link
                 key={h.slug}
-                href={`/blog/${h.slug}`}
+                href={postPath(h.slug)}
                 className="post-card"
                 style={{
                   display: "block",
