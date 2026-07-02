@@ -13,9 +13,13 @@ function seoulNow() {
 export default function SeoulClock() {
   const [time, setTime] = useState<string | null>(null);
   useEffect(() => {
-    setTime(seoulNow());
+    // 첫 세팅도 프레임 뒤로 미뤄 effect 동기 setState(react-hooks 규칙)를 피한다
+    const raf = requestAnimationFrame(() => setTime(seoulNow()));
     const id = setInterval(() => setTime(seoulNow()), 1000);
-    return () => clearInterval(id);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearInterval(id);
+    };
   }, []);
 
   return (

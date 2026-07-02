@@ -21,8 +21,11 @@ export default function EditorShell({ knownTags }: { knownTags: string[] }) {
   const [status, setStatus] = useState<string | null>(null);
   const [savedPath, setSavedPath] = useState<string | null>(null);
   const slug = makeSlug(title);
-  const slugRef = useRef(slug);
-  slugRef.current = slug;
+  // 렌더 중 ref 쓰기는 금지(react-hooks/refs) — effect에서 동기화
+  const slugRef = useRef("");
+  useEffect(() => {
+    slugRef.current = slug;
+  }, [slug]);
 
   // 이미지 붙여넣기 — 파일이면 업로드 후 이미지 노드로 삽입
   const uploadImage = useCallback(async (file: File): Promise<string | null> => {
@@ -37,6 +40,27 @@ export default function EditorShell({ knownTags }: { knownTags: string[] }) {
 
   const editor = useEditor({
     immediatelyRender: false,
+    // 초안 복원은 effect가 아니라 에디터 생성 이벤트에서 — setState-in-effect 규칙 회피
+    onCreate({ editor }) {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      try {
+        const d = JSON.parse(raw) as Draft;
+        if (d.title || d.markdown) {
+          setTitle(d.title);
+          setTags(d.tags ?? []);
+          if (d.excerpt) {
+            setExcerpt(d.excerpt);
+            setExcerptTouched(true);
+          }
+          setFeatured(d.featured ?? false);
+          editor.commands.setContent(d.markdown ?? "");
+          setStatus("임시저장본을 복원했어요.");
+        }
+      } catch {
+        /* 깨진 초안은 무시 */
+      }
+    },
     extensions: [
       // StarterKit v3에 Link 포함 — 별도 등록하면 duplicate 경고
       StarterKit.configure({ link: { openOnClick: false } }),
@@ -72,27 +96,7 @@ export default function EditorShell({ knownTags }: { knownTags: string[] }) {
     return storage?.markdown?.getMarkdown() ?? "";
   }, [editor]);
 
-  // 임시저장(localStorage) — 30초마다 + 복원은 마운트 때 한 번
-  useEffect(() => {
-    if (!editor) return;
-    const raw = localStorage.getItem(DRAFT_KEY);
-    if (raw) {
-      try {
-        const d = JSON.parse(raw) as Draft;
-        if (d.title || d.markdown) {
-          setTitle(d.title);
-          setTags(d.tags ?? []);
-          setExcerpt(d.excerpt ?? "");
-          setFeatured(d.featured ?? false);
-          editor.commands.setContent(d.markdown ?? "");
-          setStatus("임시저장본을 복원했어요.");
-        }
-      } catch {
-        /* 깨진 초안은 무시 */
-      }
-    }
-  }, [editor]);
-
+  // 임시저장(localStorage) — 30초마다 (복원은 위 onCreate에서)
   useEffect(() => {
     const id = setInterval(() => {
       const draft: Draft = { title, tags, excerpt, featured, markdown: getMarkdown() };

@@ -10,24 +10,29 @@ export default function Toc() {
   const [active, setActive] = useState<string>("");
 
   useEffect(() => {
-    const els = [...document.querySelectorAll<HTMLElement>("article .prose h2[id], article .prose h3[id]")];
-    setHeadings(
-      els.map((el) => ({
-        id: el.id,
-        text: el.textContent ?? "",
-        level: el.tagName === "H2" ? 2 : 3,
-      })),
-    );
-
-    // 화면 상단 1/4 지점을 지나는 헤딩을 현재 섹션으로
+    // DOM 수집·구독은 프레임 뒤로 — effect 동기 setState(react-hooks 규칙) 회피
     const io = new IntersectionObserver(
       (entries) => {
+        // 화면 상단 1/4 지점을 지나는 헤딩을 현재 섹션으로
         for (const en of entries) if (en.isIntersecting) setActive(en.target.id);
       },
       { rootMargin: "0% 0% -75% 0%" },
     );
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+    const raf = requestAnimationFrame(() => {
+      const els = [...document.querySelectorAll<HTMLElement>("article .prose h2[id], article .prose h3[id]")];
+      setHeadings(
+        els.map((el) => ({
+          id: el.id,
+          text: el.textContent ?? "",
+          level: el.tagName === "H2" ? 2 : 3,
+        })),
+      );
+      els.forEach((el) => io.observe(el));
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      io.disconnect();
+    };
   }, []);
 
   if (headings.length < 2) return null;
