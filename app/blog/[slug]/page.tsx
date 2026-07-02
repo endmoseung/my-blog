@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
 import { MDXRemote } from "next-mdx-remote/rsc";
 import rehypePrettyCode from "rehype-pretty-code";
+import rehypeSlug from "rehype-slug";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAllPosts, getPostBySlug } from "@/lib/posts";
 import { mdxComponents } from "@/components/mdx/MDXComponents";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { SITE_URL, SITE_NAME, SITE_DESC, SITE_AUTHOR, SITE_AUTHOR_GITHUB, postUrl as makePostUrl } from "@/lib/site";
-import PostCard from "@/components/PostCard";
-import ReadingProgress from "@/components/ReadingProgress";
+import Toc from "@/components/post/Toc";
 import Comments from "@/components/Comments";
-import FadeIn from "@/components/FadeIn";
 
 export function generateStaticParams() {
   return getAllPosts().map((p) => ({ slug: p.slug }));
@@ -71,8 +70,6 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   } catch {
     notFound();
   }
-  const words = post.content.trim().split(/\s+/).length;
-  const minRead = Math.max(1, Math.round(words / 200));
 
   // 이전/다음 글 (목록은 최신순) — prev=더 최신, next=더 과거
   const all = getAllPosts();
@@ -110,76 +107,66 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   };
 
   // BreadcrumbList — 마지막(현재 글) 항목은 item URL을 생략하는 게 schema.org 규약.
+  // /blog 인덱스는 홈으로 통합됐으므로 2단(홈 → 글)으로.
   const breadcrumbLd = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
       { "@type": "ListItem", position: 1, name: "홈", item: SITE_URL },
-      { "@type": "ListItem", position: 2, name: "블로그", item: `${SITE_URL}/blog` },
-      { "@type": "ListItem", position: 3, name: post.title },
+      { "@type": "ListItem", position: 2, name: post.title },
     ],
   };
 
   return (
-    <article style={{ maxWidth: 680, margin: "0 auto" }}>
+    <article>
       {/* 구조화 데이터 — 스키마 타입당 <script> 1개. RSC 본문이라 크롤러가 HTML에서 본다. */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(blogPostingLd) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbLd) }} />
-      <ReadingProgress />
 
-      {/* 시각적 breadcrumb — BreadcrumbList JSON-LD와 짝. */}
-      <nav aria-label="breadcrumb" style={{ marginBottom: 24, fontSize: ".82rem", color: "var(--muted)" }}>
-        <ol style={{ display: "flex", flexWrap: "wrap", gap: 6, listStyle: "none", padding: 0, margin: 0 }}>
-          <li>
-            <Link href="/" style={{ color: "var(--muted)" }}>홈</Link>
-          </li>
-          <li aria-hidden="true">/</li>
-          <li>
-            <Link href="/blog" style={{ color: "var(--muted)" }}>블로그</Link>
-          </li>
-          <li aria-hidden="true">/</li>
-          <li aria-current="page" style={{ color: "var(--fg)", fontWeight: 600 }}>
-            {post.title}
-          </li>
-        </ol>
-      </nav>
+      <p style={{ marginBottom: 34 }}>
+        <Link href="/" className="u" style={{ fontSize: 13.5, color: "var(--dim)" }}>
+          ← 글
+        </Link>
+      </p>
 
-      <header style={{ textAlign: "center", marginBottom: 40 }}>
-        <h1 style={{ fontWeight: 800, fontSize: "2.2rem", letterSpacing: "-0.03em", lineHeight: 1.2 }}>
+      <header style={{ marginBottom: 44 }}>
+        <h1
+          style={{
+            fontWeight: 800,
+            fontSize: "clamp(1.7rem, 4.5vw, 2.3rem)",
+            letterSpacing: "-0.03em",
+            lineHeight: 1.25,
+          }}
+        >
           {post.title}
         </h1>
-        <p style={{ color: "var(--muted)", fontSize: ".85rem", marginTop: 12 }}>
-          <time dateTime={post.date}>{post.date}</time> · {minRead} min read
+        <p style={{ color: "var(--dim)", fontSize: 13.5, marginTop: 14 }}>
+          <time dateTime={post.date}>{post.date}</time> · {post.minRead}분 읽기
         </p>
-        <div className="flex flex-wrap justify-center gap-2" style={{ marginTop: 12 }}>
-          {post.tags.map((t) => (
-            <span
-              key={t}
-              style={{
-                fontSize: ".72rem",
-                fontWeight: 700,
-                color: "var(--accent)",
-                background: "color-mix(in srgb, var(--accent) 14%, transparent)",
-                padding: "2px 9px",
-                borderRadius: 999,
-              }}
-            >
-              #{t}
-            </span>
-          ))}
-        </div>
+        {post.tags.length > 0 && (
+          <div className="flex flex-wrap gap-2" style={{ marginTop: 16 }}>
+            {post.tags.map((t) => (
+              <span key={t} className="tag" style={{ cursor: "default" }}>
+                {t}
+              </span>
+            ))}
+          </div>
+        )}
       </header>
-      <FadeIn>
+
+      <Toc />
+
+      <div className="prose">
         <MDXRemote
           source={post.content}
           components={mdxComponents}
           options={{
             mdxOptions: {
-              rehypePlugins: [[rehypePrettyCode, { theme: "github-dark" }]],
+              rehypePlugins: [rehypeSlug, [rehypePrettyCode, { theme: "github-dark" }]],
             },
           }}
         />
-      </FadeIn>
+      </div>
 
       {/* 이전·다음 글 내비 — 모바일에선 globals.css의 .post-nav 규칙으로 세로 스택 */}
       <nav
@@ -187,33 +174,28 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         style={{
           display: "flex",
           gap: 12,
-          marginTop: 48,
+          marginTop: 56,
           paddingTop: 24,
           borderTop: "1px solid var(--line)",
         }}
       >
         {prev ? (
-          <Link href={`/blog/${prev.slug}`} style={{ flex: 1, textDecoration: "none", color: "var(--fg)" }}>
-            <span style={{ color: "var(--muted)", fontSize: ".75rem", display: "block" }}>← 이전 글</span>
-            <span style={{ fontWeight: 700, fontSize: ".95rem" }}>{prev.title}</span>
+          <Link href={`/blog/${prev.slug}`} style={{ flex: 1, color: "var(--fg)" }}>
+            <span style={{ color: "var(--dim)", fontSize: 12, display: "block", marginBottom: 4 }}>← 이전 글</span>
+            <span className="u" style={{ fontWeight: 650, fontSize: 14.5 }}>{prev.title}</span>
           </Link>
         ) : (
           <span style={{ flex: 1 }} />
         )}
         {next ? (
-          <Link href={`/blog/${next.slug}`} style={{ flex: 1, textAlign: "right", textDecoration: "none", color: "var(--fg)" }}>
-            <span style={{ color: "var(--muted)", fontSize: ".75rem", display: "block" }}>다음 글 →</span>
-            <span style={{ fontWeight: 700, fontSize: ".95rem" }}>{next.title}</span>
+          <Link href={`/blog/${next.slug}`} style={{ flex: 1, textAlign: "right", color: "var(--fg)" }}>
+            <span style={{ color: "var(--dim)", fontSize: 12, display: "block", marginBottom: 4 }}>다음 글 →</span>
+            <span className="u" style={{ fontWeight: 650, fontSize: 14.5 }}>{next.title}</span>
           </Link>
         ) : (
           <span style={{ flex: 1 }} />
         )}
       </nav>
-      <p style={{ marginTop: 24, textAlign: "center" }}>
-        <Link href="/blog" style={{ color: "var(--muted)", fontSize: ".9rem", fontWeight: 600 }}>
-          ← 글 목록으로
-        </Link>
-      </p>
 
       {/* 댓글 — 글을 다 읽은 직후 반응을 남기는 자리. 관련 글(이탈 동선)보다 위에 둔다. */}
       <Comments postSlug={slug} />
@@ -221,14 +203,14 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
       {/* 관련 글 — 같은 태그를 공유하는 글로 내부 링크를 잇는다(link equity + 체류). */}
       {related.length > 0 && (
         <section style={{ marginTop: 56, paddingTop: 28, borderTop: "1px solid var(--line)" }}>
-          <h2 style={{ fontWeight: 800, fontSize: "1.2rem", letterSpacing: "-0.02em", marginBottom: 16 }}>
-            관련 글
-          </h2>
-          <div style={{ display: "grid", gap: 12 }}>
-            {related.map((p) => (
-              <PostCard key={p.slug} post={p} />
-            ))}
-          </div>
+          <div className="yr">관련 글</div>
+          {related.map((p) => (
+            <Link key={p.slug} className="row" href={`/blog/${p.slug}`}>
+              <span className="row-t">{p.title}</span>
+              <span className="row-d">{p.date}</span>
+              <span className="row-go" aria-hidden>→</span>
+            </Link>
+          ))}
         </section>
       )}
     </article>

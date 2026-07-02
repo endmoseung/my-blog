@@ -9,6 +9,11 @@
   --line: #ececea;
   --soft: #f4f4f2;     /* 칩·토글 배경 */
   --accent: #0f62fe;   /* 포인트는 이 파랑 1색만 */
+
+  /* 구 토큰 호환 별칭 — 댓글·위젯 등 기존 컴포넌트가 참조. 새 코드에선 쓰지 않는다. */
+  --muted: var(--dim);
+  --card: var(--bg);
+  --chip: var(--soft);
 }
 
 [data-theme="dark"] {
@@ -274,6 +279,37 @@ body {
   25% { transform: rotate(18deg); }
   50% { transform: rotate(-8deg); }
   75% { transform: rotate(12deg); }
+}
+
+/* 미니 목차 — 1100px 이상에서만 우측 고정 */
+.toc {
+  display: none;
+}
+@media (min-width: 1100px) {
+  .toc {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    position: fixed;
+    top: 140px;
+    left: calc(50% + 380px);
+    width: 200px;
+    font-size: 12.5px;
+  }
+}
+.toc-a {
+  color: var(--dim);
+  line-height: 1.5;
+  transition: color 0.25s, transform 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.toc-a:hover { color: var(--fg); }
+.toc-a.on {
+  color: var(--accent);
+  font-weight: 650;
+  transform: translateX(4px);
 }
 
 /* ── 본문(MDX) 타이포 ──────────────────────────────────────────── */
