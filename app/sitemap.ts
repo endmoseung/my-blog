@@ -4,7 +4,8 @@ import { SITE_URL, postUrl } from "@/lib/site";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const posts = getAllPosts();
-  const staticPages = ["", "/blog", "/about", "/search"].map((p) => ({
+  // /blog 인덱스는 홈으로 308 통합됨 — sitemap에서 제외
+  const staticPages = ["", "/about", "/search"].map((p) => ({
     url: `${SITE_URL}${p}`,
     lastModified: new Date(),
     changeFrequency: "weekly" as const,
