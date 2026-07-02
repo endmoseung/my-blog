@@ -409,6 +409,19 @@ article h3 {
   overflow-wrap: anywhere;
 }
 
+/* 에디터(/editor, dev 전용) — WYSIWYG 본문이 실제 글과 같은 결로 보이게 */
+.editor-body {
+  outline: none;
+  min-height: 400px;
+}
+.editor-body p.is-editor-empty:first-child::before {
+  content: "본문을 쓰세요…";
+  color: var(--dim);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
 /* ── 모바일 (≤640px) ───────────────────────────────────────────── */
 @media (max-width: 640px) {
   /* 좌우 24px 패딩은 좁은 화면에서 본문 폭을 과하게 깎는다 → 16px */
