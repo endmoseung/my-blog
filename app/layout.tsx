@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { pretendard } from "./fonts";
-import Nav from "@/components/Nav";
+import Header from "@/components/site/Header";
+import Footer from "@/components/site/Footer";
+import ScrollHairline from "@/components/site/ScrollHairline";
 import { SITE_URL, SITE_NAME, SITE_DESC } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -37,12 +39,11 @@ export default function RootLayout({
   return (
     <html lang="ko" className={pretendard.variable} suppressHydrationWarning>
       <body style={{ fontFamily: PRETENDARD, minHeight: "100dvh" }}>
-        <ThemeProvider attribute="data-theme" defaultTheme="light" enableSystem>
-          <Nav />
-          <main className="mx-auto max-w-3xl px-6 py-10">{children}</main>
-          <footer className="mx-auto max-w-3xl px-6 py-10" style={{ color: "var(--muted)", fontSize: ".85rem" }}>
-            © 2026 · 내 블로그
-          </footer>
+        <ThemeProvider attribute="data-theme" defaultTheme="system" enableSystem>
+          <ScrollHairline />
+          <Header />
+          <main className="mx-auto max-w-[680px] px-6 py-10">{children}</main>
+          <Footer />
         </ThemeProvider>
       </body>
     </html>

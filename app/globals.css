@@ -1,33 +1,32 @@
 @import "tailwindcss";
 
-/* junghyeonsu.com 결 — 심플·읽기 좋은. 무채색(slate) 기반, 강한 포인트 컬러 없음 */
+/* quiet craft — 여백+타이포 바탕에 만지는 곳마다 조용히 반응.
+   비주얼 SSOT: docs/superpowers/specs/assets/quiet-demo.html */
 :root {
-  --bg: #ffffff;
-  --fg: #020817;          /* slate-950 — 거의 검정, 가독성 최우선 */
-  --muted: #475569;       /* slate-600 — 흰 배경 대비 AA 충족(7:1 근처) */
-  --accent: #020817;      /* 포인트도 거의 먹색(링크·강조) — 이미지가 색 담당 */
-  --card: #ffffff;
-  --line: #e2e8f0;        /* slate-200 */
-  --chip: #f1f5f9;        /* slate-100 — 칩 배경 */
+  --bg: #fdfdfc;
+  --fg: #161616;
+  --dim: #8a8a86;      /* 보조 텍스트 — 흰 배경 대비 AA */
+  --line: #ececea;
+  --soft: #f4f4f2;     /* 칩·토글 배경 */
+  --accent: #0f62fe;   /* 포인트는 이 파랑 1색만 */
 }
 
 [data-theme="dark"] {
-  --bg: #020817;
-  --fg: #f8fafc;
-  --muted: #94a3b8;
-  --accent: #f8fafc;
-  --card: #0f172a;        /* slate-900 */
-  --line: #1e293b;        /* slate-800 */
-  --chip: #1e293b;
+  --bg: #111113;
+  --fg: #ededea;
+  --dim: #82827e;
+  --line: #232326;
+  --soft: #1a1a1d;
+  --accent: #7aa2ff;
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-fg: var(--fg);
-  --color-muted: var(--muted);
-  --color-accent: var(--accent);
-  --color-card: var(--card);
+  --color-dim: var(--dim);
   --color-line: var(--line);
+  --color-soft: var(--soft);
+  --color-accent: var(--accent);
   --font-sans: var(--font-pretendard);
 }
 
@@ -51,7 +50,7 @@ textarea:focus-visible,
 body {
   background: var(--bg);
   color: var(--fg);
-  transition: background 0.4s ease, color 0.4s ease;
+  transition: background 0.45s ease, color 0.45s ease;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -60,16 +59,275 @@ body {
   color: #fff;
 }
 
-/* 코드블록 (rehype-pretty-code) */
-pre {
-  background: #1a1726 !important;
+/* 테마 원형 전환 — 커스텀 clip 애니메이션이 돌 동안 기본 crossfade를 끈다 */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+/* ── 인터랙션 유닛 ─────────────────────────────────────────────── */
+
+/* draw-underline — 링크 hover 시 왼→오로 밑줄이 그려짐 */
+.u {
+  position: relative;
+}
+.u::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 100%;
+  height: 1px;
+  background: var(--fg);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.35s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.u:hover::after,
+.u:focus-visible::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+/* 이름 옆 파란 점 — hover 시 통통 */
+.name-dot {
+  color: var(--accent);
+  display: inline-block;
+  transition: transform 0.5s cubic-bezier(0.3, 1.8, 0.4, 1);
+}
+.site-name:hover .name-dot {
+  transform: translateY(-5px) scale(1.4);
+}
+
+/* 테마 토글 버튼 */
+.theme-toggle {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--soft);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.3, 1.6, 0.4, 1), border-color 0.3s;
+}
+.theme-toggle:hover {
+  transform: rotate(40deg) scale(1.12);
+  border-color: var(--dim);
+}
+.theme-toggle svg {
+  width: 14px;
+  height: 14px;
+  stroke: var(--fg);
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+/* 태그 pill — hover 시 아래에서 차오르는 채움 */
+.tag {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--dim);
+  border: 1px solid var(--line);
+  padding: 5px 13px;
+  border-radius: 999px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: color 0.3s, border-color 0.3s;
+  background: transparent;
+  z-index: 0;
+}
+.tag::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--fg);
+  border-radius: 999px;
+  transform: translateY(102%);
+  transition: transform 0.32s cubic-bezier(0.65, 0, 0.35, 1);
+  z-index: -1;
+}
+.tag:hover {
+  color: var(--bg);
+  border-color: var(--fg);
+}
+.tag:hover::before {
+  transform: translateY(0);
+}
+.tag.on {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+}
+
+/* 글 행 — hover 시 제목 밀림 + accent 화살표 등장 */
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 18px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+  position: relative;
+}
+.row .row-t {
+  font-size: 16.5px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  transition: transform 0.35s cubic-bezier(0.2, 1, 0.3, 1);
+  display: inline-block;
+  overflow-wrap: anywhere;
+}
+.row .row-d {
+  font-size: 12.5px;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transition: opacity 0.25s;
+}
+.row .row-go {
+  position: absolute;
+  left: -22px;
+  top: 50%;
+  transform: translate(-6px, -50%);
+  opacity: 0;
+  color: var(--accent);
+  font-size: 15px;
+  transition: all 0.35s cubic-bezier(0.2, 1, 0.3, 1);
+}
+.row:hover .row-t { transform: translateX(10px); }
+.row:hover .row-go { opacity: 1; transform: translate(0, -50%); }
+.row:hover .row-d { opacity: 0.45; }
+
+/* 연도 라벨 */
+.yr {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--dim);
+  margin: 34px 0 6px;
+}
+
+/* 호버 프리뷰 카드 — 커서를 따라다니는 발췌 카드 (PostExplorer가 위치 제어) */
+.preview-card {
+  position: fixed;
+  z-index: 90;
+  width: 270px;
+  background: var(--bg);
   border: 1px solid var(--line);
   border-radius: 14px;
+  padding: 16px 18px;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.92) translateY(8px);
+  transition: opacity 0.25s, transform 0.35s cubic-bezier(0.2, 1.4, 0.3, 1);
+  box-shadow: 0 18px 50px -18px rgba(0, 0, 0, 0.25);
+}
+.preview-card.on {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+/* 스크롤 진행 헤어라인 (상단 2px) */
+.hairline {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: var(--accent);
+  width: 0;
+  z-index: 100;
+}
+
+/* 롤링 단어 (히어로) */
+.roll {
+  display: inline-block;
+  position: relative;
+  height: 1.35em;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.roll span {
+  display: block;
+  height: 1.35em;
+  color: var(--accent);
+  animation: roll 7.5s cubic-bezier(0.8, 0, 0.2, 1) infinite;
+}
+@keyframes roll {
+  0%, 26% { transform: translateY(0); }
+  33%, 59% { transform: translateY(-1.35em); }
+  66%, 92% { transform: translateY(-2.7em); }
+  100% { transform: translateY(-4.05em); }
+}
+
+/* 👋 흔들기 */
+.wave {
+  display: inline-block;
+  transform-origin: 70% 70%;
+}
+.wave:hover { animation: wv 0.8s ease; }
+@keyframes wv {
+  0%, 100% { transform: rotate(0); }
+  25% { transform: rotate(18deg); }
+  50% { transform: rotate(-8deg); }
+  75% { transform: rotate(12deg); }
+}
+
+/* ── 본문(MDX) 타이포 ──────────────────────────────────────────── */
+
+.prose {
+  font-size: 16.5px;
+  line-height: 1.85;
+}
+.prose h2 {
+  font-size: 1.45rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  margin: 2.2em 0 0.7em;
+  scroll-margin-top: 24px;
+}
+.prose h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin: 1.8em 0 0.6em;
+  scroll-margin-top: 24px;
+}
+.prose p { margin: 1em 0; }
+.prose ul, .prose ol { margin: 1em 0; padding-left: 1.4em; }
+.prose li { margin: 0.35em 0; }
+.prose ul li { list-style: disc; }
+.prose ol li { list-style: decimal; }
+.prose a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.25s;
+}
+.prose a:hover { text-decoration-color: var(--accent); }
+.prose blockquote {
+  border-left: 2px solid var(--accent);
+  padding-left: 18px;
+  color: var(--dim);
+  margin: 1.4em 0;
+}
+.prose hr { border: 0; border-top: 1px solid var(--line); margin: 2.4em 0; }
+.prose strong { font-weight: 750; }
+
+/* 코드블록 (rehype-pretty-code) — 라이트에서도 어두운 블록 유지 */
+pre {
+  background: #121216 !important;
+  border: 1px solid var(--line);
+  border-radius: 12px;
   padding: 18px 18px;
   overflow-x: auto;
   margin: 22px 0;
-  font-size: 0.9rem;
-  line-height: 1.6;
+  font-size: 0.88rem;
+  line-height: 1.65;
 }
 pre code {
   background: none !important;
@@ -78,83 +336,33 @@ pre code {
 }
 /* 인라인 코드 */
 :not(pre) > code {
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
   color: var(--accent);
   padding: 2px 7px;
-  border-radius: 7px;
+  border-radius: 6px;
   font-size: 0.88em;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-/* 테마 토글 hover — CSS라 reduced-motion 규칙이 자동 적용됨 */
-.theme-toggle {
-  transition: transform 0.2s ease;
-}
-.theme-toggle:hover {
-  transform: scale(1.2) rotate(12deg);
-}
-
-/* 섹션 라벨 (Featured / All) */
-.section-label {
-  font-size: .82rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  margin-bottom: 14px;
-}
-
-/* 카드 — grid/flex item은 min-width:auto 기본값이라 콘텐츠 최소폭 밑으로 안 줄어든다.
-   그래서 좁은 모바일에서 1fr 트랙이 카드 콘텐츠 폭만큼 부풀어 가로 오버플로가 났다.
-   min-width:0 으로 트랙 안에서 줄어들 수 있게 풀어준다. */
-.post-card {
-  min-width: 0;
-}
-/* 카드 안 긴 한글/URL이 줄바꿈 없이 이어지면 다시 트랙을 밀어낸다 — 강제로 끊는다. */
-.post-card h3,
-.post-card p {
-  overflow-wrap: anywhere;
-  word-break: break-word;
-}
-
-/* 카드 호버 — 살짝 떠오르며 컬러 그림자 */
-.post-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 28px -14px rgba(2, 8, 23, 0.25);
-  border-color: var(--fg);
-}
-
-/* 내비 링크 — 밑줄이 좌→우로 자라는 효과 */
-.nav-link {
-  position: relative;
-}
-.nav-link::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  bottom: -4px;
-  height: 2px;
-  width: 0;
-  background: var(--accent);
-  border-radius: 2px;
-  transition: width 0.22s ease;
-}
-.nav-link:hover::after {
-  width: 100%;
-}
-
-/* 본문(MDX) 미디어 — 이미지·표가 좁은 화면을 넘지 않게.
+/* 본문 미디어 — 이미지·표가 좁은 화면을 넘지 않게.
    표는 줄일 수 없으니 가로 스크롤로 가둔다(페이지 전체가 흔들리지 않게). */
 .prose img,
 article img {
   max-width: 100%;
   height: auto;
+  border-radius: 10px;
 }
 article table {
   display: block;
   width: 100%;
   overflow-x: auto;
   border-collapse: collapse;
+}
+article table th,
+article table td {
+  border: 1px solid var(--line);
+  padding: 8px 12px;
+  font-size: 0.92rem;
 }
 /* 본문 긴 단어/URL이 코드블록 밖에서 가로 스크롤을 만들지 않게 */
 article p,
@@ -170,15 +378,14 @@ article h3 {
   /* 좌우 24px 패딩은 좁은 화면에서 본문 폭을 과하게 깎는다 → 16px */
   main,
   footer,
-  nav.site-nav {
+  header.site-header {
     padding-left: 16px !important;
     padding-right: 16px !important;
   }
-  /* 큰 고정 제목들이 폭을 넘지 않게 — 인라인 2.2rem을 모바일에서 눌러준다 */
+  /* 큰 고정 제목들이 폭을 넘지 않게 */
   article > header h1 {
-    font-size: clamp(1.5rem, 7vw, 2.2rem) !important;
+    font-size: clamp(1.5rem, 7vw, 2.1rem) !important;
   }
-  /* 코드블록 패딩 축소로 가독 폭 확보 */
   pre {
     padding: 14px 14px;
     font-size: 0.82rem;
@@ -190,20 +397,23 @@ article h3 {
   nav.post-nav a {
     text-align: left !important;
   }
-  /* 헤더 내비의 탭 영역 — 글자 크기는 그대로 두고 세로 탭 영역만 44px로.
-     아이콘(🔍·🌙)이 18~25px라 손가락으로 정확히 누르기 어려웠다. */
-  nav.site-nav a,
-  nav.site-nav button {
+  /* 헤더 탭 영역 44px — 손가락으로 정확히 누르게 */
+  header.site-header a,
+  header.site-header button {
     min-height: 44px;
     display: inline-flex;
     align-items: center;
   }
+  /* 모바일에선 행 밀림·프리뷰 비활성 (hover 없음) */
+  .row:hover .row-t { transform: none; }
+  .preview-card { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
 }
