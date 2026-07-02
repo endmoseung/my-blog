@@ -21,7 +21,7 @@ export default function CommentForm({
   const [error, setError] = useState<string | null>(null);
   // 마지막에 쓴 이름 기억(편의) — localStorage는 클라에서만
   const [name, setName] = useState(() =>
-    typeof window !== "undefined" ? localStorage.getItem(NAME_KEY) ?? "" : ""
+    typeof window !== "undefined" ? (localStorage.getItem(NAME_KEY) ?? "") : "",
   );
   const [body, setBody] = useState("");
 
@@ -52,7 +52,10 @@ export default function CommentForm({
   };
 
   return (
-    <form action={action} style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    <form
+      action={action}
+      style={{ display: "flex", flexDirection: "column", gap: 10 }}
+    >
       <input type="hidden" name="postSlug" value={postSlug} />
       <input type="hidden" name="parentId" value={parentId ?? ""} />
       {/* honeypot: 사람 눈엔 안 보이고 봇만 채움 */}
@@ -62,7 +65,13 @@ export default function CommentForm({
         tabIndex={-1}
         autoComplete="off"
         aria-hidden
-        style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          width: 1,
+          height: 1,
+          opacity: 0,
+        }}
       />
       <input
         name="authorName"
@@ -79,7 +88,7 @@ export default function CommentForm({
         aria-label={compact ? "답글 내용" : "댓글 내용"}
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder={compact ? "답글을 남겨봐…" : "댓글을 남겨봐 — 로그인 필요 없어 :)"}
+        placeholder={compact ? "답글을 남겨주세요" : "댓글을 남겨주세요!"}
         maxLength={4000}
         required
         rows={compact ? 2 : 3}
@@ -109,7 +118,15 @@ export default function CommentForm({
           <button
             type="button"
             onClick={onDone}
-            style={{ padding: "8px 14px", borderRadius: 999, border: "1px solid var(--line)", background: "transparent", color: "var(--muted)", fontSize: ".9rem", cursor: "pointer" }}
+            style={{
+              padding: "8px 14px",
+              borderRadius: 999,
+              border: "1px solid var(--line)",
+              background: "transparent",
+              color: "var(--muted)",
+              fontSize: ".9rem",
+              cursor: "pointer",
+            }}
           >
             취소
           </button>

@@ -42,3 +42,6 @@ next-env.d.ts
 
 .lazyweb/
 .playwright-mcp/
+
+# brainstorming visual companion
+.superpowers/

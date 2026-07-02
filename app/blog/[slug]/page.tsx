@@ -215,6 +215,9 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         </Link>
       </p>
 
+      {/* 댓글 — 글을 다 읽은 직후 반응을 남기는 자리. 관련 글(이탈 동선)보다 위에 둔다. */}
+      <Comments postSlug={slug} />
+
       {/* 관련 글 — 같은 태그를 공유하는 글로 내부 링크를 잇는다(link equity + 체류). */}
       {related.length > 0 && (
         <section style={{ marginTop: 56, paddingTop: 28, borderTop: "1px solid var(--line)" }}>
@@ -228,8 +231,6 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           </div>
         </section>
       )}
-
-      <Comments postSlug={slug} />
     </article>
   );
 }

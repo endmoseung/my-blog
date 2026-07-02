@@ -20,7 +20,14 @@ export default function CommentSection({
 
   return (
     <section>
-      <h2 style={{ fontWeight: 800, fontSize: "1.3rem", marginBottom: 18, letterSpacing: "-0.02em" }}>
+      <h2
+        style={{
+          fontWeight: 800,
+          fontSize: "1.3rem",
+          marginBottom: 18,
+          letterSpacing: "-0.02em",
+        }}
+      >
         댓글 <span style={{ color: "var(--accent)" }}>{total}</span>
       </h2>
 
@@ -28,11 +35,22 @@ export default function CommentSection({
       <CommentForm postSlug={postSlug} parentId={null} />
 
       {/* 댓글 트리 */}
-      <div style={{ marginTop: 28, display: "flex", flexDirection: "column", gap: 20 }}>
+      <div
+        style={{
+          marginTop: 28,
+          display: "flex",
+          flexDirection: "column",
+          gap: 20,
+        }}
+      >
         {comments.length === 0 ? (
-          <p style={{ color: "var(--muted)", fontSize: ".95rem" }}>첫 댓글을 남겨봐! ✨</p>
+          <p style={{ color: "var(--muted)", fontSize: ".95rem" }}>
+            첫 댓글을 남겨주세요!✨
+          </p>
         ) : (
-          comments.map((c) => <CommentItem key={c.id} comment={c} postSlug={postSlug} depth={0} />)
+          comments.map((c) => (
+            <CommentItem key={c.id} comment={c} postSlug={postSlug} depth={0} />
+          ))
         )}
       </div>
     </section>
