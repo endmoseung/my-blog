@@ -46,13 +46,13 @@ my-blog (기존 레포, feat/quiet-craft 브랜치)
 ## 디자인 토큰
 
 ```css
-:root      { --bg:#fdfdfc; --fg:#161616; --dim:#8a8a86; --line:#ececea; --soft:#f4f4f2; --accent:#0f62fe; }
-html.dark  { --bg:#111113; --fg:#ededea; --dim:#82827e; --line:#232326; --soft:#1a1a1d; --accent:#7aa2ff; }
+:root                { --bg:#fdfdfc; --fg:#161616; --dim:#8a8a86; --line:#ececea; --soft:#f4f4f2; --accent:#0f62fe; }
+[data-theme="dark"]  { --bg:#111113; --fg:#ededea; --dim:#82827e; --line:#232326; --soft:#1a1a1d; --accent:#7aa2ff; }
 ```
 
 - 폰트: Pretendard Variable(로컬 woff2 유지). 가변 굵기를 인터랙션에 사용.
 - 본문 measure: 640px(리스트)·680px(본문). 포인트색은 accent 1색만.
-- 다크모드: next-themes 유지하되 class 전략(`html.dark`)으로 정렬.
+- 다크모드: next-themes의 기존 `data-theme` 전략 유지 (구현 시 class 전략에서 선회 — 변경 범위 최소화).
 
 ## 인터랙션 유닛 (전부 `prefers-reduced-motion` 존중)
 

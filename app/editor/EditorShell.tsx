@@ -96,14 +96,18 @@ export default function EditorShell({ knownTags }: { knownTags: string[] }) {
     return storage?.markdown?.getMarkdown() ?? "";
   }, [editor]);
 
-  // 임시저장(localStorage) — 30초마다 (복원은 위 onCreate에서)
+  // 임시저장(localStorage) — 30초마다 (복원은 위 onCreate에서).
+  // 최신 상태는 ref로 읽어 타이핑마다 타이머가 리셋되지 않게 한다.
+  const draftRef = useRef<Draft>({ title: "", tags: [], excerpt: "", featured: false, markdown: "" });
+  useEffect(() => {
+    draftRef.current = { title, tags, excerpt, featured, markdown: getMarkdown() };
+  }, [title, tags, excerpt, featured, getMarkdown]);
   useEffect(() => {
     const id = setInterval(() => {
-      const draft: Draft = { title, tags, excerpt, featured, markdown: getMarkdown() };
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftRef.current));
     }, AUTOSAVE_MS);
     return () => clearInterval(id);
-  }, [title, tags, excerpt, featured, getMarkdown]);
+  }, []);
 
   const addTag = (t: string) => {
     const clean = t.trim();
