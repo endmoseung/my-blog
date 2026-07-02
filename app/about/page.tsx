@@ -18,19 +18,20 @@ export default function About() {
   return (
     <article style={{ lineHeight: 1.9, maxWidth: 680, margin: "0 auto" }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(personLd) }} />
-      <h1 style={{ fontWeight: 800, fontSize: "2rem", marginBottom: 18, letterSpacing: "-0.02em" }}>
-        안녕하세요 👋
+      <h1 style={{ fontWeight: 800, fontSize: "clamp(1.7rem, 4.5vw, 2.1rem)", marginBottom: 18, letterSpacing: "-0.03em" }}>
+        안녕하세요 <span className="wave">👋</span>
       </h1>
-      <p style={{ fontSize: "1.08rem" }}>
+      <p style={{ fontSize: "1.02rem", color: "var(--dim)" }}>
         여기서 요즘 무슨 생각 하며 사는지, 만든 것들, 빠져 있는 것들을 적어둡니다.
         솔직하고 편하게 쓰려고 해요. 천천히 둘러봐 주세요.
       </p>
-      <p style={{ marginTop: 20 }}>
+      <p style={{ marginTop: 24 }}>
         <a
           href={SITE_AUTHOR_GITHUB}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: "var(--accent)", textDecoration: "underline", textUnderlineOffset: 3, fontWeight: 600 }}
+          className="u"
+          style={{ fontWeight: 650, fontSize: 14.5 }}
         >
           GitHub →
         </a>

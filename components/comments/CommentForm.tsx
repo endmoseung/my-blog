@@ -40,12 +40,25 @@ export default function CommentForm({
     });
   }
 
-  const inputStyle: React.CSSProperties = {
+  // quiet craft — 이름은 라인형 인풋, 본문은 soft 배경 블록
+  const lineInput: React.CSSProperties = {
     width: "100%",
-    padding: "10px 12px",
+    padding: "10px 2px",
+    border: "none",
+    borderBottom: "1px solid var(--line)",
+    borderRadius: 0,
+    background: "transparent",
+    color: "var(--fg)",
+    fontSize: ".95rem",
+    fontFamily: "inherit",
+    outline: "none",
+  };
+  const blockInput: React.CSSProperties = {
+    width: "100%",
+    padding: "12px 14px",
     borderRadius: 10,
     border: "1px solid var(--line)",
-    background: "var(--bg)",
+    background: "var(--soft)",
     color: "var(--fg)",
     fontSize: ".95rem",
     fontFamily: "inherit",
@@ -81,7 +94,7 @@ export default function CommentForm({
         placeholder="이름"
         maxLength={40}
         required
-        style={{ ...inputStyle, maxWidth: 240 }}
+        style={{ ...lineInput, maxWidth: 240 }}
       />
       <textarea
         name="body"
@@ -92,7 +105,7 @@ export default function CommentForm({
         maxLength={4000}
         required
         rows={compact ? 2 : 3}
-        style={{ ...inputStyle, resize: "vertical" }}
+        style={{ ...blockInput, resize: "vertical", marginTop: 4 }}
       />
       {error && <p style={{ color: "#e03131", fontSize: ".85rem" }}>{error}</p>}
       <div className="flex gap-2">
@@ -104,7 +117,7 @@ export default function CommentForm({
             padding: "8px 18px",
             borderRadius: 999,
             border: 0,
-            background: "var(--accent)",
+            background: "var(--fg)",
             color: "var(--bg)",
             fontWeight: 700,
             fontSize: ".9rem",
