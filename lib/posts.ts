@@ -11,12 +11,15 @@ export type PostMeta = {
   excerpt: string;
   tags: string[];
   featured: boolean;
+  minRead: number;
 };
 export type Post = PostMeta & { content: string };
 
 function read(slug: string): Post {
   const raw = fs.readFileSync(path.join(POSTS_DIR, `${slug}.mdx`), "utf8");
   const { data, content } = matter(raw);
+  // 본문 페이지·호버 프리뷰가 같은 값을 쓰도록 여기서 한 번만 계산 (200 wpm)
+  const words = content.trim().split(/\s+/).length;
   return {
     slug,
     title: data.title ?? slug,
@@ -24,6 +27,7 @@ function read(slug: string): Post {
     excerpt: data.excerpt ?? "",
     tags: data.tags ?? [],
     featured: data.featured ?? false,
+    minRead: Math.max(1, Math.round(words / 200)),
     content,
   };
 }

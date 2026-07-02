@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import PostCard from "@/components/PostCard";
-import FadeIn from "@/components/FadeIn";
+import PostExplorer from "@/components/home/PostExplorer";
+import RollingWord from "@/components/home/RollingWord";
 import { getAllPosts } from "@/lib/posts";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { SITE_URL, SITE_NAME, SITE_DESC } from "@/lib/site";
@@ -12,8 +12,6 @@ export const metadata: Metadata = {
 
 export default function Home() {
   const posts = getAllPosts();
-  const featured = posts.filter((p) => p.featured);
-  const rest = posts.filter((p) => !p.featured);
 
   // WebSite + SearchAction — Google 사이트링크 검색박스 후보. /search?q={...}로 연결.
   const websiteLd = {
@@ -38,68 +36,29 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(websiteLd) }}
       />
-      <FadeIn>
-        <header style={{ padding: "40px 0 48px" }}>
-          <h1
-            style={{
-              fontSize: "clamp(1.9rem, 5vw, 2.6rem)",
-              fontWeight: 800,
-              letterSpacing: "-0.03em",
-              lineHeight: 1.25,
-            }}
-          >
-            내 삶 그리고 생각,
-            <br />
-            기록하는 공간
-          </h1>
-          <p
-            style={{
-              color: "var(--muted)",
-              marginTop: 14,
-              fontSize: "1.02rem",
-            }}
-          >
-            사람을 좋아하고, 생각을 나누는 것을 좋아합니다.
-          </p>
-        </header>
-      </FadeIn>
 
-      {featured.length > 0 && (
-        <section style={{ marginBottom: 40 }}>
-          <h2 className="section-label">Featured</h2>
-          <div className="grid gap-4" style={{ gridTemplateColumns: "1fr" }}>
-            {featured.map((p, i) => (
-              <FadeIn key={p.slug} delay={0.05 * i}>
-                <PostCard post={p} large />
-              </FadeIn>
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section>
-        <h2 className="section-label">All</h2>
-        <div
-          className="grid gap-4"
+      <section style={{ padding: "56px 0 58px" }}>
+        <p style={{ fontSize: 15, color: "var(--dim)", marginBottom: 14 }}>
+          <span className="wave">👋</span> 안녕하세요, 프론트엔드 엔지니어 김승모입니다.
+        </p>
+        <h1
           style={{
-            // min(260px,100%) — 컨테이너가 260px보다 좁은 모바일에선 100%를 택해
-            // 트랙이 줄어든다. 그냥 260px이면 좁은 화면에서 그리드가 안 줄고 가로 오버플로.
-            gridTemplateColumns: "repeat(auto-fill,minmax(min(260px,100%),1fr))",
-            alignItems: "stretch",
+            fontSize: "clamp(28px, 5vw, 38px)",
+            fontWeight: 800,
+            letterSpacing: "-0.03em",
+            lineHeight: 1.35,
           }}
         >
-          {rest.map((p, i) => (
-            // delay는 위 6개까지만 단계적으로(64개 누적되면 끝 카드가 너무 늦게 뜸). height:100%로 카드가 셀을 채워 높이가 정렬됨.
-            <FadeIn
-              key={p.slug}
-              delay={Math.min(i, 6) * 0.04}
-              style={{ height: "100%" }}
-            >
-              <PostCard post={p} />
-            </FadeIn>
-          ))}
-        </div>
+          웹을 <RollingWord />
+          <br />그 과정을 여기에 남깁니다.
+        </h1>
+        <p style={{ marginTop: 16, fontSize: 15, color: "var(--dim)", maxWidth: "46ch" }}>
+          React, Next.js, AWS — 그리고 이직과 회고까지. velog 시절부터 쌓아온{" "}
+          {posts.length}편의 기록.
+        </p>
       </section>
+
+      <PostExplorer posts={posts} />
     </>
   );
 }

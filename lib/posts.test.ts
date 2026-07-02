@@ -14,10 +14,18 @@ describe("posts", () => {
     }
   });
 
+  it("minRead는 1 이상의 정수다", () => {
+    for (const p of getAllPosts()) {
+      expect(p.minRead).toBeGreaterThanOrEqual(1);
+      expect(Number.isInteger(p.minRead)).toBe(true);
+    }
+  });
+
   it("slug로 글 하나를 본문과 함께 반환한다", () => {
-    const post = getPostBySlug("hello-world");
-    expect(post.title).toBe("안녕, 첫 글이야");
-    expect(post.content).toContain("반가워");
-    expect(post.tags).toContain("일상");
+    // hello-world는 velog 마이그레이션 때 삭제됨 — 실존하는 대표 글로 검증
+    const post = getPostBySlug("retrospect");
+    expect(post.title).toBe("회고");
+    expect(post.content).toContain("이직");
+    expect(post.tags).toContain("회고");
   });
 });
