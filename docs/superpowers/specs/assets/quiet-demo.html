@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>moseung — quiet craft demo</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root{
+  --bg:#fdfdfc; --fg:#161616; --dim:#8a8a86; --line:#ececea; --soft:#f4f4f2; --accent:#0f62fe;
+}
+html.dark{ --bg:#111113; --fg:#ededea; --dim:#82827e; --line:#232326; --soft:#1a1a1d; --accent:#7aa2ff; }
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:auto}
+body{background:var(--bg);color:var(--fg);font-family:"Pretendard Variable",Pretendard,-apple-system,sans-serif;
+transition:background .45s ease,color .45s ease;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--accent);color:#fff}
+
+/* progress hairline */
+#prog{position:fixed;top:0;left:0;height:2px;background:var(--accent);width:0;z-index:100;transition:width .1s linear}
+
+.wrap{max-width:640px;margin:0 auto;padding:0 24px}
+
+/* header */
+header{display:flex;justify-content:space-between;align-items:center;padding:34px 0 0}
+.name{font-weight:800;font-size:15px;letter-spacing:-.01em}
+.name .dot{color:var(--accent);display:inline-block;transition:transform .5s cubic-bezier(.3,1.8,.4,1)}
+.name:hover .dot{transform:translateY(-5px) scale(1.4)}
+.hnav{display:flex;gap:22px;align-items:center;font-size:13.5px;color:var(--dim)}
+.u{position:relative}
+.u::after{content:"";position:absolute;left:0;bottom:-3px;width:100%;height:1px;background:var(--fg);transform:scaleX(0);transform-origin:right;transition:transform .35s cubic-bezier(.65,0,.35,1)}
+.u:hover{color:var(--fg)}
+.u:hover::after{transform:scaleX(1);transform-origin:left}
+
+/* theme toggle */
+#tg{width:30px;height:30px;border:1px solid var(--line);border-radius:50%;background:var(--soft);display:grid;place-items:center;cursor:pointer;transition:transform .4s cubic-bezier(.3,1.6,.4,1),border-color .3s}
+#tg:hover{transform:rotate(40deg) scale(1.12);border-color:var(--dim)}
+#tg svg{width:14px;height:14px;stroke:var(--fg);fill:none;stroke-width:1.6;stroke-linecap:round}
+
+/* hero */
+.hero{padding:88px 0 66px}
+.hi{font-size:15px;color:var(--dim);margin-bottom:14px}
+.hi .wave{display:inline-block;transform-origin:70% 70%;cursor:default}
+.hi .wave:hover{animation:wv .8s ease}
+@keyframes wv{0%,100%{transform:rotate(0)}25%{transform:rotate(18deg)}50%{transform:rotate(-8deg)}75%{transform:rotate(12deg)}}
+h1{font-size:clamp(28px,5vw,38px);font-weight:800;letter-spacing:-.03em;line-height:1.35}
+.roll{display:inline-block;position:relative;height:1.35em;overflow:hidden;vertical-align:bottom}
+.roll span{display:block;height:1.35em;color:var(--accent);animation:roll 7.5s cubic-bezier(.8,0,.2,1) infinite}
+@keyframes roll{0%,26%{transform:translateY(0)}33%,59%{transform:translateY(-1.35em)}66%,92%{transform:translateY(-2.7em)}100%{transform:translateY(-4.05em)}}
+.sub{margin-top:16px;font-size:15px;color:var(--dim);max-width:46ch}
+
+/* tags */
+.tags{display:flex;gap:8px;flex-wrap:wrap;padding-bottom:38px}
+.tag{font-size:12.5px;font-weight:600;color:var(--dim);border:1px solid var(--line);padding:5px 13px;border-radius:999px;cursor:pointer;position:relative;overflow:hidden;transition:color .3s,border-color .3s;background:transparent}
+.tag::before{content:"";position:absolute;inset:0;background:var(--fg);border-radius:999px;transform:translateY(102%);transition:transform .32s cubic-bezier(.65,0,.35,1);z-index:-1}
+.tag:hover{color:var(--bg);border-color:var(--fg)}
+.tag:hover::before{transform:translateY(0)}
+.tag.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+
+/* post list */
+.yr{font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--dim);margin:34px 0 6px}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:18px;padding:15px 0;border-bottom:1px solid var(--line);position:relative;cursor:pointer}
+.row .t{font-size:16.5px;font-weight:650;letter-spacing:-.015em;transition:transform .35s cubic-bezier(.2,1,.3,1),color .25s;display:inline-block}
+.row .d{font-size:12.5px;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap;transition:opacity .25s}
+.row .go{position:absolute;left:-22px;top:50%;transform:translate(-6px,-50%);opacity:0;color:var(--accent);font-size:15px;transition:all .35s cubic-bezier(.2,1,.3,1)}
+.row:hover .t{transform:translateX(10px)}
+.row:hover .go{opacity:1;transform:translate(0,-50%)}
+.row:hover .d{opacity:.45}
+
+/* floating preview */
+#pv{position:fixed;z-index:90;width:270px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px 18px;pointer-events:none;opacity:0;transform:scale(.92) translateY(8px);transition:opacity .25s,transform .35s cubic-bezier(.2,1.4,.3,1);box-shadow:0 18px 50px -18px rgba(0,0,0,.25)}
+#pv.on{opacity:1;transform:scale(1) translateY(0)}
+#pv .pvt{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--accent);margin-bottom:7px}
+#pv .pvx{font-size:12.5px;color:var(--dim);line-height:1.65;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+#pv .pvm{margin-top:10px;font-size:11.5px;color:var(--fg);font-weight:600}
+
+/* footer */
+footer{display:flex;justify-content:space-between;align-items:center;padding:70px 0 46px;font-size:13px;color:var(--dim)}
+#clock{font-variant-numeric:tabular-nums}
+#clock b{color:var(--fg);font-weight:650}
+
+/* demo note */
+#note{position:fixed;right:16px;bottom:16px;background:var(--soft);border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--dim);z-index:100;line-height:1.6}
+#note b{color:var(--accent)}
+@media(max-width:720px){#pv{display:none}.row:hover .t{transform:none}}
+</style>
+</head>
+<body>
+<div id="prog"></div>
+
+<div class="wrap">
+  <header>
+    <a class="name">김승모<span class="dot">.</span></a>
+    <nav class="hnav">
+      <a class="u">글</a><a class="u">소개</a><a class="u">RSS</a>
+      <div id="tg" title="테마 전환">
+        <svg id="ic-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M4.9 4.9l1.6 1.6M17.5 17.5l1.6 1.6M19.1 4.9l-1.6 1.6M6.5 17.5l-1.6 1.6"/></svg>
+        <svg id="ic-moon" viewBox="0 0 24 24" style="display:none"><path d="M20 13.2A8.1 8.1 0 0 1 10.8 4 8.1 8.1 0 1 0 20 13.2z"/></svg>
+      </div>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="hi"><span class="wave">👋</span> 안녕하세요, 프론트엔드 엔지니어 김승모입니다.</div>
+    <h1>웹을
+      <span class="roll"><span>만들고,</span><span>기록하고,</span><span>공유하고,</span><span>만들고,</span></span><br>
+      그 과정을 여기에 남깁니다.
+    </h1>
+    <p class="sub">React, Next.js, AWS — 그리고 이직과 회고까지. velog 시절부터 쌓아온 65편의 기록.</p>
+  </section>
+
+  <div class="tags">
+    <button class="tag on">전체</button><button class="tag">React</button><button class="tag">Next.js</button><button class="tag">AWS</button><button class="tag">JavaScript</button><button class="tag">회고</button>
+  </div>
+
+  <main id="list">
+    <div class="yr">2025</div>
+    <a class="row" data-x="진짜 이직만 하면 회고글 쓰겠다고 마음먹었는데, 이직을 해서 글을 작성한다. 커피챗 한 잔이 커리어가 되기까지." data-g="회고 · 이직" data-m="12분 · 3,400자">
+      <span class="t">회고 — 연결이 만들어 준 이직</span><span class="d">09.07</span><span class="go">→</span>
+    </a>
+    <div class="yr">2024</div>
+    <a class="row" data-x="middleware와 CloudFront 사이에서 이미지 최적화 비용을 낮춘 실전 기록." data-g="Next.js · AWS" data-m="9분">
+      <span class="t">NextJS 실무에 적용하기</span><span class="d">11.24</span><span class="go">→</span>
+    </a>
+    <a class="row" data-x="조건문 덩어리를 걷어내고 컴포넌트가 '무엇'만 말하게 하기까지." data-g="React · 패턴" data-m="7분">
+      <span class="t">선언적 컴포넌트 다시 보기</span><span class="d">06.15</span><span class="go">→</span>
+    </a>
+    <a class="row" data-x="Webpack에서 Turbopack까지 — 모듈 번들러가 진화해 온 길을 따라가 본다." data-g="JavaScript" data-m="11분">
+      <span class="t">모듈 번들러의 진화</span><span class="d">03.02</span><span class="go">→</span>
+    </a>
+    <div class="yr">2023</div>
+    <a class="row" data-x="냉장고 파먹기 필터링 예제로 배우는 훅 분리의 감각." data-g="React · Hook" data-m="6분">
+      <span class="t">React CustomHook, 어렵지 않아요</span><span class="d">12.19</span><span class="go">→</span>
+    </a>
+    <a class="row" data-x="프론트엔드가 S3와 CloudFront를 처음 만졌을 때 벌어지는 일들." data-g="AWS · 인프라" data-m="8분">
+      <span class="t">클라우드 뉴비의 AWS 옆구르기</span><span class="d">08.30</span><span class="go">→</span>
+    </a>
+    <a class="row" data-x="2023-2024년, 프론트엔드를 배운다는 것의 의미가 어떻게 달라졌는지." data-g="에세이" data-m="10분">
+      <span class="t">2023-2024년에 프론트엔드를 배우는 것</span><span class="d">05.11</span><span class="go">→</span>
+    </a>
+  </main>
+
+  <footer>
+    <span>© 2026 김승모</span>
+    <span id="clock">서울 <b>--:--:--</b></span>
+  </footer>
+</div>
+
+<div id="pv"><div class="pvt"></div><div class="pvx"></div><div class="pvm"></div></div>
+<div id="note"><b>DEMO</b> — 글 제목에 마우스를 올려보세요 · 우상단 테마 토글을 눌러보세요 · 태그 pill도 만져보세요</div>
+
+<script>
+/* scroll progress */
+addEventListener('scroll',()=>{
+  const h=document.documentElement;
+  document.getElementById('prog').style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100||0)+'%';
+},{passive:true});
+
+/* clock */
+const ck=document.querySelector('#clock b');
+setInterval(()=>{ck.textContent=new Date().toLocaleTimeString('ko-KR',{hour12:false})},1000);
+ck.textContent=new Date().toLocaleTimeString('ko-KR',{hour12:false});
+
+/* floating preview follows cursor */
+const pv=document.getElementById('pv');
+let px=0,py=0,tx=0,ty=0,vis=false;
+document.querySelectorAll('.row').forEach(r=>{
+  r.addEventListener('mouseenter',e=>{
+    pv.querySelector('.pvt').textContent=r.dataset.g;
+    pv.querySelector('.pvx').textContent=r.dataset.x;
+    pv.querySelector('.pvm').textContent=r.dataset.m+' 읽기 →';
+    vis=true;pv.classList.add('on');
+  });
+  r.addEventListener('mouseleave',()=>{vis=false;pv.classList.remove('on')});
+});
+addEventListener('mousemove',e=>{tx=e.clientX;ty=e.clientY});
+(function f(){
+  px+=(tx-px)*.14;py+=(ty-py)*.14;
+  const w=pv.offsetWidth,vw=innerWidth;
+  let x=px+26;if(x+w>vw-16)x=px-w-26;
+  pv.style.left=x+'px';pv.style.top=Math.min(py+18,innerHeight-pv.offsetHeight-16)+'px';
+  requestAnimationFrame(f);
+})();
+
+/* tag pills */
+document.querySelectorAll('.tag').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tag').forEach(o=>o.classList.remove('on'));t.classList.add('on');
+}));
+
+/* theme toggle with view-transition circle */
+const tg=document.getElementById('tg'),sun=document.getElementById('ic-sun'),moon=document.getElementById('ic-moon');
+const setIcons=()=>{const d=document.documentElement.classList.contains('dark');sun.style.display=d?'none':'block';moon.style.display=d?'block':'none'};
+tg.addEventListener('click',e=>{
+  const flip=()=>{document.documentElement.classList.toggle('dark');setIcons()};
+  if(document.startViewTransition){
+    const x=e.clientX,y=e.clientY,r=Math.hypot(Math.max(x,innerWidth-x),Math.max(y,innerHeight-y));
+    const vt=document.startViewTransition(flip);
+    vt.ready.then(()=>{
+      document.documentElement.animate(
+        {clipPath:[`circle(0px at ${x}px ${y}px)`,`circle(${r}px at ${x}px ${y}px)`]},
+        {duration:520,easing:'cubic-bezier(.2,0,.2,1)',pseudoElement:'::view-transition-new(root)'}
+      );
+    });
+  } else flip();
+});
+setIcons();
+</script>
+</body>
+</html>
