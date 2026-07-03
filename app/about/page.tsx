@@ -1,8 +1,24 @@
+import type { Metadata } from "next";
 import { jsonLdHtml } from "@/lib/json-ld";
-import { SITE_URL, SITE_DESC, SITE_AUTHOR, SITE_AUTHOR_GITHUB } from "@/lib/site";
+import { SITE_URL, SITE_DESC, SITE_AUTHOR, SITE_AUTHOR_GITHUB, SITE_NAME, absoluteUrl } from "@/lib/site";
 
-// template이 ' — 내 블로그'를 자동으로 붙인다.
-export const metadata = { title: "소개" };
+const description = "프론트엔드 개발자 김승모의 소개 페이지입니다. 요즘의 생각, 만든 것, 커뮤니티와 개발 경험을 기록합니다.";
+
+// template이 ' — 모승 블로그'를 자동으로 붙인다.
+export const metadata: Metadata = {
+  title: "소개",
+  description,
+  alternates: { canonical: absoluteUrl("/about") },
+  openGraph: {
+    title: `소개 — ${SITE_NAME}`,
+    description,
+    url: "/about",
+    type: "profile",
+    siteName: SITE_NAME,
+    locale: "ko_KR",
+  },
+  twitter: { card: "summary_large_image", title: `소개 — ${SITE_NAME}`, description },
+};
 
 export default function About() {
   // Person — 작성자를 검색엔진이 인물로 인식(E-E-A-T). sameAs로 외부 프로필 연결.

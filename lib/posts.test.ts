@@ -8,6 +8,7 @@ describe("posts", () => {
     expect(posts[0]).toHaveProperty("slug");
     expect(posts[0]).toHaveProperty("title");
     expect(posts[0]).toHaveProperty("date");
+    expect(posts[0]).toHaveProperty("description");
     // 내림차순 확인
     for (let i = 1; i < posts.length; i++) {
       expect(posts[i - 1].date >= posts[i].date).toBe(true);
@@ -21,11 +22,13 @@ describe("posts", () => {
     }
   });
 
-  it("slug로 글 하나를 본문과 함께 반환한다", () => {
-    // hello-world는 velog 마이그레이션 때 삭제됨 — 실존하는 대표 글로 검증
-    const post = getPostBySlug("retrospect");
-    expect(post.title).toBe("회고");
-    expect(post.content).toContain("이직");
-    expect(post.tags).toContain("회고");
+  it("slug로 글 하나를 본문과 메타 정보까지 반환한다", () => {
+    const first = getAllPosts()[0];
+    const post = getPostBySlug(first.slug);
+    expect(post.title).toBe(first.title);
+    expect(post.content.length).toBeGreaterThan(0);
+    expect(post.tags).toEqual(first.tags);
+    expect(post.description.length).toBeGreaterThan(0);
+    expect(post.description.length).toBeLessThanOrEqual(156);
   });
 });

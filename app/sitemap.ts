@@ -11,11 +11,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "weekly" as const,
     priority: p === "" ? 1.0 : 0.8,
   }));
-  const postPages = posts.map((p) => ({
-    url: postUrl(p.slug),
-    lastModified: new Date(p.date),
-    changeFrequency: "monthly" as const,
-    priority: 0.6,
-  }));
+  const postPages = posts
+    .filter((p) => !p.noindex)
+    .map((p) => ({
+      url: postUrl(p.slug),
+      lastModified: new Date(p.updatedDate ?? p.date),
+      changeFrequency: "monthly" as const,
+      priority: p.featured ? 0.75 : 0.6,
+    }));
   return [...staticPages, ...postPages];
 }

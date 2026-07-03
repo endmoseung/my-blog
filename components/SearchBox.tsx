@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { search, type SearchDoc } from "@/lib/search";
+import { postPath } from "@/lib/site";
 
 export default function SearchBox({ docs }: { docs: SearchDoc[] }) {
   const [q, setQ] = useState("");
@@ -47,7 +48,7 @@ export default function SearchBox({ docs }: { docs: SearchDoc[] }) {
           <>
             <p style={{ color: "var(--dim)", fontSize: ".8rem", padding: "12px 0 4px" }}>{hits.length}개 찾음</p>
             {hits.map((h) => (
-              <Link key={h.slug} href={`/blog/${h.slug}`} className="row">
+              <Link key={h.slug} href={postPath(h.slug)} className="row">
                 <span>
                   <span className="row-t">{h.title}</span>
                   <span

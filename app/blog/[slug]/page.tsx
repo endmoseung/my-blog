@@ -7,7 +7,16 @@ import { notFound } from "next/navigation";
 import { getAllPosts, getPostBySlug } from "@/lib/posts";
 import { mdxComponents } from "@/components/mdx/MDXComponents";
 import { jsonLdHtml } from "@/lib/json-ld";
-import { SITE_URL, SITE_NAME, SITE_DESC, SITE_AUTHOR, SITE_AUTHOR_GITHUB, postUrl as makePostUrl } from "@/lib/site";
+import {
+  SITE_URL,
+  SITE_NAME,
+  SITE_DESC,
+  SITE_AUTHOR,
+  SITE_AUTHOR_GITHUB,
+  postOgImageUrl,
+  postPath,
+  postUrl as makePostUrl,
+} from "@/lib/site";
 import Toc from "@/components/post/Toc";
 import Comments from "@/components/Comments";
 
@@ -32,29 +41,55 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const slug = decodeSlug(rawSlug);
   try {
     const post = getPostBySlug(slug);
+    const postUrl = makePostUrl(slug);
+    const ogImage = post.coverImage ?? postOgImageUrl(slug);
     const published = post.date ? new Date(post.date).toISOString() : undefined;
+    const modified = post.updatedDate ? new Date(post.updatedDate).toISOString() : published;
     return {
-      // template이 ' — 내 블로그'를 붙이므로 여기선 제목만.
+      // template이 ' — 모승 블로그'를 붙이므로 여기선 제목만.
       title: post.title,
-      description: post.excerpt,
-      keywords: post.tags,
+      description: post.description,
+      keywords: [...post.tags, post.title, SITE_AUTHOR],
       authors: [{ name: SITE_AUTHOR, url: SITE_AUTHOR_GITHUB }],
-      // 상대경로 — metadataBase가 절대 URL로 풀어준다. canonical은 alternates 아래에 둔다(top-level 아님).
-      alternates: { canonical: `/blog/${slug}` },
+      creator: SITE_AUTHOR,
+      publisher: SITE_AUTHOR,
+      category: post.tags[0] ?? "blog",
+      robots: post.noindex ? { index: false, follow: false } : { index: true, follow: true },
+      // canonical은 한글 slug가 안전하게 인코딩된 절대 URL로 고정한다.
+      alternates: { canonical: post.canonicalUrl ?? postUrl },
       openGraph: {
         type: "article",
         title: post.title,
-        description: post.excerpt,
-        url: `/blog/${slug}`,
+        description: post.description,
+        url: postUrl,
         siteName: SITE_NAME,
         locale: "ko_KR",
         publishedTime: published,
+        modifiedTime: modified,
         // openGraph.authors는 문자열 배열(top-level authors는 객체 배열 — 다른 모양).
         authors: [SITE_AUTHOR],
         tags: post.tags,
-        // og:image는 opengraph-image.tsx에서 Next가 자동 주입하므로 여기 수동 지정하지 않는다.
+        images: [
+          {
+            url: ogImage,
+            width: 1200,
+            height: 630,
+            alt: `${post.title} — ${SITE_NAME}`,
+          },
+        ],
       },
-      twitter: { card: "summary_large_image", title: post.title, description: post.excerpt },
+      twitter: {
+        card: "summary_large_image",
+        title: post.title,
+        description: post.description,
+        images: [ogImage],
+      },
+      other: {
+        "article:published_time": published ?? "",
+        "article:modified_time": modified ?? "",
+        "article:author": SITE_AUTHOR,
+        "article:section": post.tags[0] ?? "blog",
+      },
     };
   } catch {
     return { title: SITE_NAME, description: SITE_DESC };
@@ -88,22 +123,24 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
   const postUrl = makePostUrl(slug);
   const publishedISO = post.date ? new Date(post.date).toISOString() : undefined;
+  const modifiedISO = post.updatedDate ? new Date(post.updatedDate).toISOString() : publishedISO;
+  const structuredImage = post.coverImage ?? postOgImageUrl(slug);
 
   // BlogPosting — Google이 글·작성자·날짜를 리치 결과로 이해. 날짜는 반드시 ISO 8601.
   const blogPostingLd = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     headline: post.title,
-    description: post.excerpt,
+    description: post.description,
     datePublished: publishedISO,
-    dateModified: publishedISO,
+    dateModified: modifiedISO,
     author: { "@type": "Person", name: SITE_AUTHOR, url: SITE_AUTHOR_GITHUB },
     publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
     mainEntityOfPage: { "@type": "WebPage", "@id": postUrl },
     url: postUrl,
     keywords: post.tags.join(", "),
-    // og:image와 동일한 동적 OG 라우트를 대표 이미지로.
-    image: `${postUrl}/opengraph-image`,
+    // og:image와 동일한 대표 이미지를 구조화 데이터에도 연결.
+    image: structuredImage,
   };
 
   // BreadcrumbList — 마지막(현재 글) 항목은 item URL을 생략하는 게 schema.org 규약.
@@ -180,7 +217,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         }}
       >
         {prev ? (
-          <Link href={`/blog/${prev.slug}`} style={{ flex: 1, color: "var(--fg)" }}>
+          <Link href={postPath(prev.slug)} style={{ flex: 1, color: "var(--fg)" }}>
             <span style={{ color: "var(--dim)", fontSize: 12, display: "block", marginBottom: 4 }}>← 이전 글</span>
             <span className="u" style={{ fontWeight: 650, fontSize: 14.5 }}>{prev.title}</span>
           </Link>
@@ -188,7 +225,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           <span style={{ flex: 1 }} />
         )}
         {next ? (
-          <Link href={`/blog/${next.slug}`} style={{ flex: 1, textAlign: "right", color: "var(--fg)" }}>
+          <Link href={postPath(next.slug)} style={{ flex: 1, textAlign: "right", color: "var(--fg)" }}>
             <span style={{ color: "var(--dim)", fontSize: 12, display: "block", marginBottom: 4 }}>다음 글 →</span>
             <span className="u" style={{ fontWeight: 650, fontSize: 14.5 }}>{next.title}</span>
           </Link>
@@ -205,7 +242,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         <section style={{ marginTop: 56, paddingTop: 28, borderTop: "1px solid var(--line)" }}>
           <div className="yr">관련 글</div>
           {related.map((p) => (
-            <Link key={p.slug} className="row" href={`/blog/${p.slug}`}>
+            <Link key={p.slug} className="row" href={postPath(p.slug)}>
               <span className="row-t">{p.title}</span>
               <span className="row-d">{p.date}</span>
               <span className="row-go" aria-hidden>→</span>

@@ -5,25 +5,61 @@ import { pretendard } from "./fonts";
 import Header from "@/components/site/Header";
 import Footer from "@/components/site/Footer";
 import ScrollHairline from "@/components/site/ScrollHairline";
-import { SITE_URL, SITE_NAME, SITE_DESC } from "@/lib/site";
+import { SITE_URL, SITE_NAME, SITE_DESC, SITE_AUTHOR, SITE_KEYWORDS } from "@/lib/site";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  // template은 자식 페이지에만 적용 — 자식이 plain title을 주면 '제목 — 내 블로그'로 자동 완성.
+  // template은 자식 페이지에만 적용 — 자식이 plain title을 주면 '제목 — 모승 블로그'로 자동 완성.
   title: { default: SITE_NAME, template: `%s — ${SITE_NAME}` },
   description: SITE_DESC,
-  robots: { index: true, follow: true },
+  applicationName: SITE_NAME,
+  generator: "Next.js",
+  referrer: "origin-when-cross-origin",
+  keywords: SITE_KEYWORDS,
+  authors: [{ name: SITE_AUTHOR }],
+  creator: SITE_AUTHOR,
+  publisher: SITE_AUTHOR,
+  category: "technology",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   openGraph: {
     title: SITE_NAME,
     description: SITE_DESC,
+    url: "/",
     type: "website",
     locale: "ko_KR",
     siteName: SITE_NAME,
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: `${SITE_NAME} 대표 이미지`,
+      },
+    ],
   },
-  twitter: { card: "summary_large_image", title: SITE_NAME, description: SITE_DESC },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: SITE_DESC,
+    images: ["/opengraph-image"],
+  },
   alternates: {
     canonical: "/",
     types: { "application/rss+xml": `${SITE_URL}/feed.xml` },
+  },
+  icons: {
+    icon: [{ url: "/favicon.ico" }, { url: "/icon", type: "image/png" }],
+    apple: [{ url: "/apple-icon", type: "image/png" }],
   },
   // 검색엔진 등록(Search Console / 네이버 서치어드바이저)에서 발급한 코드를 채운다.
   // verification: { google: "", other: { "naver-site-verification": "" } },

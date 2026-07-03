@@ -1,7 +1,24 @@
+import type { Metadata } from "next";
 import SearchBox from "@/components/SearchBox";
 import { getSearchDocs } from "@/lib/posts";
+import { SITE_NAME, absoluteUrl } from "@/lib/site";
 
-export const metadata = { title: "검색" };
+const description = `${SITE_NAME}의 글을 제목, 태그, 본문 내용까지 통합 검색합니다.`;
+
+export const metadata: Metadata = {
+  title: "검색",
+  description,
+  alternates: { canonical: absoluteUrl("/search") },
+  openGraph: {
+    title: `검색 — ${SITE_NAME}`,
+    description,
+    url: "/search",
+    type: "website",
+    siteName: SITE_NAME,
+    locale: "ko_KR",
+  },
+  twitter: { card: "summary_large_image", title: `검색 — ${SITE_NAME}`, description },
+};
 
 export default function SearchPage() {
   const docs = getSearchDocs();

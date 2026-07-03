@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PostMeta } from "@/lib/posts";
+import { postPath } from "@/lib/site";
 
 const TOP_TAG_COUNT = 8;
 
@@ -76,7 +77,7 @@ export default function PostExplorer({ posts }: { posts: PostMeta[] }) {
   const Row = ({ p }: { p: PostMeta }) => (
     <Link
       className="row"
-      href={`/blog/${p.slug}`}
+      href={postPath(p.slug)}
       onMouseEnter={() => enter(p)}
       onMouseLeave={leave}
     >
