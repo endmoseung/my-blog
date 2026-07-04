@@ -419,6 +419,13 @@ article h3 {
 .editor-body:focus-visible {
   outline: none !important;
 }
+/* 에디터 코드블록 — 본문은 shiki가 글자색을 입히지만 에디터는 생 <pre>라
+   라이트 모드 검정 글자가 어두운 배경에 묻힌다. 밝은 글자·커서로 고정. */
+.editor-body pre,
+.editor-body pre code {
+  color: #e8e8e4;
+  caret-color: #e8e8e4;
+}
 .editor-body p.is-editor-empty:first-child::before {
   content: "본문을 쓰세요…";
   color: var(--dim);
