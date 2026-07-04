@@ -1,4 +1,5 @@
 // 로컬 에디터(/editor)의 순수 로직 — 파일 IO 없음, 단위 테스트 대상.
+import matter from "gray-matter";
 
 export type DraftMeta = {
   title: string;
@@ -50,4 +51,35 @@ export function autoExcerpt(markdown: string): string {
     .replace(/\s+/g, " ")
     .trim();
   return plain.slice(0, 150);
+}
+
+// 기존 글 수정 — 미지 frontmatter 키(source 등)를 보존하며 변경분만 병합해
+// 완성 mdx 문자열을 돌려준다. date는 원본 유지, updatedDate만 갱신.
+export function updateMdx(
+  originalRaw: string,
+  changes: { title: string; excerpt: string; tags: string[]; featured: boolean; updatedDate: string },
+  markdown: string,
+): string {
+  const { data } = matter(originalRaw);
+  const merged: Record<string, unknown> = {
+    ...data,
+    title: changes.title,
+    updatedDate: changes.updatedDate,
+    excerpt: changes.excerpt,
+    tags: changes.tags,
+    featured: changes.featured,
+  };
+
+  // 표준 키를 고정 순서로 먼저, 그 외 키는 원본 등장 순서대로 뒤에.
+  const canonical = ["title", "date", "updatedDate", "excerpt", "tags", "featured"];
+  const keys = [...canonical.filter((k) => merged[k] !== undefined), ...Object.keys(merged).filter((k) => !canonical.includes(k))];
+
+  const yamlValue = (v: unknown): string => {
+    if (Array.isArray(v)) return `[${v.map((x) => JSON.stringify(String(x))).join(", ")}]`;
+    if (typeof v === "boolean" || typeof v === "number") return String(v);
+    return JSON.stringify(String(v));
+  };
+
+  const lines = ["---", ...keys.map((k) => `${k}: ${yamlValue(merged[k])}`), "---"];
+  return lines.join("\n") + "\n\n" + markdown.trim() + "\n";
 }

@@ -414,12 +414,78 @@ article h3 {
   outline: none;
   min-height: 400px;
 }
+/* 전역 [tabindex]:focus-visible 아웃라인이 캔버스 전체에 걸리는 것 방지 */
+.editor-body:focus,
+.editor-body:focus-visible {
+  outline: none !important;
+}
 .editor-body p.is-editor-empty:first-child::before {
   content: "본문을 쓰세요…";
   color: var(--dim);
   float: left;
   height: 0;
   pointer-events: none;
+}
+
+/* 에디터 툴바 — 본문 위에 sticky */
+.ed-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 6px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.ed-btn {
+  min-width: 32px;
+  height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--dim);
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.ed-btn:hover {
+  background: var(--soft);
+  color: var(--fg);
+}
+.ed-btn.on {
+  background: var(--fg);
+  color: var(--bg);
+}
+.ed-sep {
+  width: 1px;
+  height: 18px;
+  background: var(--line);
+  margin: 0 6px;
+}
+
+/* 에디터 하단 고정 바 */
+.ed-bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 14px 24px;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--line);
 }
 
 /* ── 모바일 (≤640px) ───────────────────────────────────────────── */

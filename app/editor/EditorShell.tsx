@@ -1,33 +1,112 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import { Markdown } from "tiptap-markdown";
 import { makeSlug, autoExcerpt, type DraftMeta } from "@/lib/editor";
 
-const DRAFT_KEY = "editor_draft_v1";
-const AUTOSAVE_MS = 30_000;
+const AUTOSAVE_MS = 20_000;
 
 type Draft = { title: string; tags: string[]; excerpt: string; featured: boolean; markdown: string };
+export type EditorInitial = {
+  slug: string;
+  title: string;
+  tags: string[];
+  excerpt: string;
+  featured: boolean;
+  markdown: string;
+  date: string;
+};
 
-export default function EditorShell({ knownTags }: { knownTags: string[] }) {
-  const [title, setTitle] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+/* ── 툴바 ─────────────────────────────────────────────── */
+function Toolbar({ editor, onImagePick }: { editor: Editor | null; onImagePick: () => void }) {
+  // 선택 위치가 바뀔 때마다 active 상태를 다시 그린다 (이벤트 구독 — effect 내 동기 setState 아님)
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!editor) return;
+    const bump = () => setTick((t) => t + 1);
+    editor.on("transaction", bump);
+    editor.on("selectionUpdate", bump);
+    return () => {
+      editor.off("transaction", bump);
+      editor.off("selectionUpdate", bump);
+    };
+  }, [editor]);
+
+  if (!editor) return null;
+  const c = editor.chain().focus();
+
+  const items: Array<{ label: string; title: string; on: boolean; run: () => void } | "|"> = [
+    { label: "H2", title: "큰 제목", on: editor.isActive("heading", { level: 2 }), run: () => c.toggleHeading({ level: 2 }).run() },
+    { label: "H3", title: "작은 제목", on: editor.isActive("heading", { level: 3 }), run: () => c.toggleHeading({ level: 3 }).run() },
+    "|",
+    { label: "B", title: "굵게 (⌘B)", on: editor.isActive("bold"), run: () => c.toggleBold().run() },
+    { label: "I", title: "기울임 (⌘I)", on: editor.isActive("italic"), run: () => c.toggleItalic().run() },
+    { label: "S̶", title: "취소선", on: editor.isActive("strike"), run: () => c.toggleStrike().run() },
+    "|",
+    { label: "❝", title: "인용", on: editor.isActive("blockquote"), run: () => c.toggleBlockquote().run() },
+    { label: "‹›", title: "인라인 코드", on: editor.isActive("code"), run: () => c.toggleCode().run() },
+    { label: "{ }", title: "코드 블록", on: editor.isActive("codeBlock"), run: () => c.toggleCodeBlock().run() },
+    "|",
+    { label: "•", title: "목록", on: editor.isActive("bulletList"), run: () => c.toggleBulletList().run() },
+    { label: "1.", title: "번호 목록", on: editor.isActive("orderedList"), run: () => c.toggleOrderedList().run() },
+    "|",
+    {
+      label: "🔗",
+      title: "링크",
+      on: editor.isActive("link"),
+      run: () => {
+        if (editor.isActive("link")) {
+          c.unsetLink().run();
+          return;
+        }
+        const url = window.prompt("링크 URL");
+        if (url) c.setLink({ href: url }).run();
+      },
+    },
+    { label: "🖼", title: "이미지 업로드", on: false, run: onImagePick },
+    { label: "―", title: "구분선", on: false, run: () => c.setHorizontalRule().run() },
+  ];
+
+  return (
+    <div className="ed-toolbar" role="toolbar" aria-label="서식">
+      {items.map((it, i) =>
+        it === "|" ? (
+          <span key={i} className="ed-sep" aria-hidden />
+        ) : (
+          <button key={i} type="button" title={it.title} className={`ed-btn${it.on ? " on" : ""}`} onMouseDown={(e) => e.preventDefault()} onClick={it.run}>
+            {it.label}
+          </button>
+        ),
+      )}
+    </div>
+  );
+}
+
+/* ── 에디터 본체 ───────────────────────────────────────── */
+export default function EditorShell({ knownTags, initial }: { knownTags: string[]; initial?: EditorInitial }) {
+  const isEdit = !!initial;
+  const draftKey = isEdit ? `editor_draft_v1:${initial.slug}` : "editor_draft_v1";
+
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
   const [tagInput, setTagInput] = useState("");
-  const [excerpt, setExcerpt] = useState("");
-  const [excerptTouched, setExcerptTouched] = useState(false);
-  const [featured, setFeatured] = useState(false);
+  const [excerpt, setExcerpt] = useState(initial?.excerpt ?? "");
+  const [excerptTouched, setExcerptTouched] = useState(isEdit && !!initial?.excerpt);
+  const [featured, setFeatured] = useState(initial?.featured ?? false);
   const [status, setStatus] = useState<string | null>(null);
+  const [autosavedAt, setAutosavedAt] = useState<string | null>(null);
   const [savedPath, setSavedPath] = useState<string | null>(null);
-  const slug = makeSlug(title);
+
+  const slug = isEdit ? initial.slug : makeSlug(title);
   // 렌더 중 ref 쓰기는 금지(react-hooks/refs) — effect에서 동기화
   const slugRef = useRef("");
   useEffect(() => {
     slugRef.current = slug;
   }, [slug]);
 
-  // 이미지 붙여넣기 — 파일이면 업로드 후 이미지 노드로 삽입
+  // 이미지 업로드 — 붙여넣기/드롭/툴바 공용
   const uploadImage = useCallback(async (file: File): Promise<string | null> => {
     const fd = new FormData();
     fd.append("file", file);
@@ -38,11 +117,27 @@ export default function EditorShell({ knownTags }: { knownTags: string[] }) {
     return url;
   }, []);
 
+  const insertImages = useCallback(
+    (editor: Editor, files: File[]) => {
+      for (const f of files) {
+        uploadImage(f).then((url) => {
+          if (url) editor.chain().focus().setImage({ src: url }).run();
+          else setStatus("이미지 업로드에 실패했어요.");
+        });
+      }
+    },
+    [uploadImage],
+  );
+
   const editor = useEditor({
     immediatelyRender: false,
-    // 초안 복원은 effect가 아니라 에디터 생성 이벤트에서 — setState-in-effect 규칙 회피
+    // 콘텐츠 주입·초안 복원은 effect가 아니라 에디터 생성 이벤트에서 — setState-in-effect 규칙 회피
     onCreate({ editor }) {
-      const raw = localStorage.getItem(DRAFT_KEY);
+      if (isEdit) {
+        editor.commands.setContent(initial.markdown);
+        return;
+      }
+      const raw = localStorage.getItem(draftKey);
       if (!raw) return;
       try {
         const d = JSON.parse(raw) as Draft;
@@ -73,41 +168,52 @@ export default function EditorShell({ knownTags }: { knownTags: string[] }) {
         const files = [...(event.clipboardData?.files ?? [])].filter((f) => f.type.startsWith("image/"));
         if (files.length === 0) return false;
         event.preventDefault();
-        for (const f of files) {
-          uploadImage(f).then((url) => {
-            if (url) {
-              const { schema } = view.state;
-              const node = schema.nodes.image.create({ src: url });
-              view.dispatch(view.state.tr.replaceSelectionWith(node));
-            } else {
-              setStatus("이미지 업로드에 실패했어요.");
-            }
-          });
-        }
+        if (editor) insertImages(editor, files);
+        return true;
+      },
+      handleDrop: (view, event) => {
+        const files = [...(event.dataTransfer?.files ?? [])].filter((f) => f.type.startsWith("image/"));
+        if (files.length === 0) return false;
+        event.preventDefault();
+        if (editor) insertImages(editor, files);
         return true;
       },
     },
   });
 
-  // tiptap-markdown이 editor.storage에 markdown을 심지만 타입 선언은 없다 —
-  // 구조적 타입으로 좁혀 접근(§type-safety: as any 금지).
-  const getMarkdown = useCallback(() => {
-    const storage = editor?.storage as { markdown?: { getMarkdown(): string } } | undefined;
-    return storage?.markdown?.getMarkdown() ?? "";
+  // 툴바 이미지 버튼용 숨김 파일 입력
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  // editor 인스턴스는 ref로 고정해 getMarkdown을 안정 함수로 만든다
+  // (React Compiler가 editor 의존 useCallback의 메모를 보존하지 못함).
+  const editorRef = useRef<Editor | null>(null);
+  useEffect(() => {
+    editorRef.current = editor;
   }, [editor]);
 
-  // 임시저장(localStorage) — 30초마다 (복원은 위 onCreate에서).
-  // 최신 상태는 ref로 읽어 타이핑마다 타이머가 리셋되지 않게 한다.
-  const draftRef = useRef<Draft>({ title: "", tags: [], excerpt: "", featured: false, markdown: "" });
+  // tiptap-markdown이 editor.storage에 markdown을 심지만 타입 선언은 없다 —
+  // 구조적 타입으로 좁혀 접근(§type-safety: as any 금지).
+  // 수동 useCallback 금지 — React Compiler가 메모를 자동 처리(수동 메모는 보존 실패 에러).
+  function getMarkdown() {
+    const storage = editorRef.current?.storage as { markdown?: { getMarkdown(): string } } | undefined;
+    return storage?.markdown?.getMarkdown() ?? "";
+  }
+
+  // 임시저장(localStorage) — 20초마다. 메타는 ref로, 본문은 저장 시점에 에디터에서 직접 읽어
+  // 타이핑마다 타이머가 리셋되지 않게 한다.
+  const metaRef = useRef({ title: "", tags: [] as string[], excerpt: "", featured: false });
   useEffect(() => {
-    draftRef.current = { title, tags, excerpt, featured, markdown: getMarkdown() };
-  }, [title, tags, excerpt, featured, getMarkdown]);
+    metaRef.current = { title, tags, excerpt, featured };
+  }, [title, tags, excerpt, featured]);
   useEffect(() => {
     const id = setInterval(() => {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftRef.current));
+      const storage = editorRef.current?.storage as { markdown?: { getMarkdown(): string } } | undefined;
+      const draft: Draft = { ...metaRef.current, markdown: storage?.markdown?.getMarkdown() ?? "" };
+      localStorage.setItem(draftKey, JSON.stringify(draft));
+      setAutosavedAt(new Date().toLocaleTimeString("ko-KR", { hour12: false }));
     }, AUTOSAVE_MS);
     return () => clearInterval(id);
-  }, []);
+  }, [draftKey]);
 
   const addTag = (t: string) => {
     const clean = t.trim();
@@ -119,7 +225,7 @@ export default function EditorShell({ knownTags }: { knownTags: string[] }) {
     const markdown = getMarkdown();
     const meta: DraftMeta = {
       title: title.trim(),
-      date: new Date().toISOString().slice(0, 10),
+      date: initial?.date ?? new Date().toISOString().slice(0, 10),
       excerpt: excerptTouched && excerpt.trim() ? excerpt.trim() : autoExcerpt(markdown),
       tags,
       featured,
@@ -128,18 +234,23 @@ export default function EditorShell({ knownTags }: { knownTags: string[] }) {
     const res = await fetch("/editor/api/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ meta, markdown }),
+      body: JSON.stringify(isEdit ? { mode: "update", slug: initial.slug, meta, markdown } : { mode: "create", meta, markdown }),
     });
     const data = await res.json();
-    if (res.ok) {
-      localStorage.removeItem(DRAFT_KEY);
+    if (!res.ok) {
+      setStatus(data.error ?? "저장에 실패했어요.");
+      return;
+    }
+    localStorage.removeItem(draftKey);
+    if (isEdit) {
+      setStatus(`저장 완료 · ${new Date().toLocaleTimeString("ko-KR", { hour12: false })}`);
+    } else {
       setSavedPath(data.path);
       setStatus(null);
-    } else {
-      setStatus(data.error ?? "저장에 실패했어요.");
     }
   };
 
+  /* 새 글 저장 완료 화면 */
   if (savedPath) {
     return (
       <div style={{ padding: "60px 0" }}>
@@ -148,32 +259,27 @@ export default function EditorShell({ knownTags }: { knownTags: string[] }) {
           <code>{savedPath}</code> 에 저장됐어요. 커밋·푸시는 직접 해주세요.
         </p>
         <p style={{ marginTop: 24, display: "flex", gap: 18 }}>
-          <a href={`/blog/${slug}`} className="u" style={{ fontWeight: 650, fontSize: 14.5 }}>
+          <a href={`/blog/${encodeURIComponent(slug)}`} className="u" style={{ fontWeight: 650, fontSize: 14.5 }}>
             글 보러 가기 →
           </a>
-          <button
-            onClick={() => location.reload()}
-            className="u"
-            style={{ fontWeight: 650, fontSize: 14.5, background: "none", border: 0, cursor: "pointer", color: "var(--dim)" }}
-          >
-            새 글 쓰기
-          </button>
+          <a href={`/editor/write?slug=${encodeURIComponent(slug)}`} className="u" style={{ fontWeight: 650, fontSize: 14.5, color: "var(--dim)" }}>
+            계속 수정하기
+          </a>
+          <a href="/editor" className="u" style={{ fontWeight: 650, fontSize: 14.5, color: "var(--dim)" }}>
+            목록으로
+          </a>
         </p>
       </div>
     );
   }
 
   return (
-    <div>
-      <p style={{ fontSize: 12, color: "var(--dim)", letterSpacing: ".08em", marginBottom: 26 }}>
-        LOCAL EDITOR — 이 페이지는 dev에서만 존재해요 · 30초마다 자동 임시저장
-      </p>
-
+    <div style={{ paddingBottom: 96 }}>
       {/* 제목 */}
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        placeholder="제목을 입력하면 나머지는 알아서"
+        placeholder="제목을 입력하세요"
         aria-label="제목"
         style={{
           width: "100%",
@@ -185,10 +291,12 @@ export default function EditorShell({ knownTags }: { knownTags: string[] }) {
           background: "transparent",
           color: "var(--fg)",
           fontFamily: "inherit",
+          marginTop: 10,
         }}
       />
-      <p style={{ fontSize: 12, color: "var(--dim)", margin: "8px 0 18px", fontVariantNumeric: "tabular-nums" }}>
-        content/posts/{slug || "…"}.mdx · {new Date().toISOString().slice(0, 10)}
+      <p style={{ fontSize: 12, color: "var(--dim)", margin: "8px 0 14px", fontVariantNumeric: "tabular-nums" }}>
+        content/posts/{slug || "…"}.mdx
+        {isEdit ? ` · 최초 ${initial.date} (slug은 URL 보존을 위해 고정)` : ` · ${new Date().toISOString().slice(0, 10)}`}
       </p>
 
       {/* 태그 */}
@@ -217,34 +325,36 @@ export default function EditorShell({ knownTags }: { knownTags: string[] }) {
           }}
           placeholder="+ 새 태그"
           aria-label="새 태그"
-          style={{
-            border: "none",
-            outline: "none",
-            background: "transparent",
-            color: "var(--fg)",
-            fontSize: 12.5,
-            width: 90,
-            fontFamily: "inherit",
-          }}
+          style={{ border: "none", outline: "none", background: "transparent", color: "var(--fg)", fontSize: 12.5, width: 90, fontFamily: "inherit" }}
         />
       </div>
 
       {/* featured */}
-      <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--dim)", marginBottom: 22, cursor: "pointer" }}>
+      <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--dim)", marginBottom: 14, cursor: "pointer" }}>
         <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} />
         featured — 홈 최상단에 노출
       </label>
 
-      {/* 본문 — WYSIWYG 자체가 미리보기(실제 본문과 같은 .prose 스타일) */}
-      <div
-        style={{ borderTop: "1px solid var(--line)", paddingTop: 8, minHeight: 420, cursor: "text" }}
-        onClick={() => editor?.chain().focus().run()}
-      >
+      {/* 툴바 + 본문 — WYSIWYG 자체가 미리보기(실제 본문과 같은 .prose 스타일) */}
+      <Toolbar editor={editor} onImagePick={() => fileInput.current?.click()} />
+      <input
+        ref={fileInput}
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        onChange={(e) => {
+          const files = [...(e.target.files ?? [])];
+          if (editor && files.length) insertImages(editor, files);
+          e.target.value = "";
+        }}
+      />
+      <div style={{ minHeight: 420, cursor: "text", paddingTop: 4 }} onClick={() => editor?.chain().focus().run()}>
         <EditorContent editor={editor} />
       </div>
       <p style={{ fontSize: 12, color: "var(--dim)", marginTop: 6 }}>
-        마크다운 단축키가 그대로 먹어요: <code># 제목</code>, <code>**굵게**</code>, <code>- 리스트</code>, <code>&gt; 인용</code>,{" "}
-        <code>```코드</code> · 이미지는 붙여넣기(⌘V)
+        마크다운 단축키 OK: <code># 제목</code> <code>**굵게**</code> <code>- 리스트</code> <code>&gt; 인용</code> <code>```코드</code> · 이미지는
+        붙여넣기(⌘V)·드래그·툴바 🖼
       </p>
 
       {/* excerpt */}
@@ -271,7 +381,14 @@ export default function EditorShell({ knownTags }: { knownTags: string[] }) {
         }}
       />
 
-      <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 18 }}>
+      {/* 하단 고정 바 */}
+      <div className="ed-bottom">
+        <a href="/editor" className="u" style={{ fontSize: 13.5, color: "var(--dim)" }}>
+          ← 목록
+        </a>
+        <span style={{ fontSize: 12.5, color: "var(--dim)", flex: 1, textAlign: "center" }}>
+          {status ?? (autosavedAt ? `임시저장 ${autosavedAt}` : "20초마다 자동 임시저장")}
+        </span>
         <button
           onClick={save}
           disabled={!title.trim()}
@@ -286,9 +403,8 @@ export default function EditorShell({ knownTags }: { knownTags: string[] }) {
             cursor: title.trim() ? "pointer" : "default",
           }}
         >
-          파일로 저장
+          {isEdit ? "수정 저장" : "파일로 저장"}
         </button>
-        {status && <span style={{ fontSize: 13, color: "var(--dim)" }}>{status}</span>}
       </div>
     </div>
   );

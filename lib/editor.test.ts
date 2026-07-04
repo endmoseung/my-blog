@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import matter from "gray-matter";
-import { makeSlug, makeFrontmatter, autoExcerpt } from "./editor";
+import { makeSlug, makeFrontmatter, autoExcerpt, updateMdx } from "./editor";
 
 describe("makeSlug", () => {
   it("한글은 유지하고 공백은 하이픈으로", () => {
@@ -45,5 +45,42 @@ describe("autoExcerpt", () => {
   });
   it("빈 본문이면 빈 문자열", () => {
     expect(autoExcerpt("")).toBe("");
+  });
+});
+
+describe("updateMdx", () => {
+  const original = `---
+title: "옛 제목"
+date: "2023-06-13"
+excerpt: "옛 발췌"
+tags: ["방송"]
+featured: true
+source: "https://velog.io/@endmoseung/old"
+---
+
+옛 본문.
+`;
+  const changes = {
+    title: "새 제목",
+    excerpt: "새 발췌",
+    tags: ["회고", "AI"],
+    featured: false,
+    updatedDate: "2026-07-04",
+  };
+
+  it("미지 키(source)를 보존하고 변경 필드를 반영한다", () => {
+    const out = updateMdx(original, changes, "새 본문.");
+    const { data, content } = matter(out);
+    expect(data.source).toBe("https://velog.io/@endmoseung/old");
+    expect(data.title).toBe("새 제목");
+    expect(data.tags).toEqual(["회고", "AI"]);
+    expect(data.featured).toBe(false);
+    expect(content.trim()).toBe("새 본문.");
+  });
+
+  it("원본 date는 유지하고 updatedDate를 기록한다", () => {
+    const { data } = matter(updateMdx(original, changes, "x"));
+    expect(data.date).toBe("2023-06-13");
+    expect(data.updatedDate).toBe("2026-07-04");
   });
 });
