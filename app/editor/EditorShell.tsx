@@ -3,10 +3,19 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
+import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
+import { createLowlight, common } from "lowlight";
 import { Markdown } from "tiptap-markdown";
 import { makeSlug, autoExcerpt, type DraftMeta } from "@/lib/editor";
 
 const AUTOSAVE_MS = 20_000;
+
+// 에디터 안 실시간 하이라이팅(lowlight=highlight.js). 블로그 본문은 shiki가 따로 칠하므로
+// 여기 언어 목록은 편집 편의용 — 저장되는 마크다운엔 ```lang 만 남는다.
+const lowlight = createLowlight(common);
+const CODE_LANGS = [
+  "", "ts", "tsx", "js", "jsx", "json", "bash", "css", "html", "python", "sql", "yaml", "kotlin", "java", "markdown",
+];
 
 type Draft = { title: string; tags: string[]; excerpt: string; featured: boolean; markdown: string };
 export type EditorInitial = {
@@ -69,6 +78,9 @@ function Toolbar({ editor, onImagePick }: { editor: Editor | null; onImagePick: 
     { label: "―", title: "구분선", on: false, run: () => c.setHorizontalRule().run() },
   ];
 
+  const inCodeBlock = editor.isActive("codeBlock");
+  const codeLang = (editor.getAttributes("codeBlock").language as string | null) ?? "";
+
   return (
     <div className="ed-toolbar" role="toolbar" aria-label="서식">
       {items.map((it, i) =>
@@ -79,6 +91,21 @@ function Toolbar({ editor, onImagePick }: { editor: Editor | null; onImagePick: 
             {it.label}
           </button>
         ),
+      )}
+      {/* 코드블록 안에 커서가 있을 때만 — 언어 선택 */}
+      {inCodeBlock && (
+        <select
+          className="ed-lang"
+          aria-label="코드 언어"
+          value={CODE_LANGS.includes(codeLang) ? codeLang : ""}
+          onChange={(e) => editor.chain().focus().updateAttributes("codeBlock", { language: e.target.value || null }).run()}
+        >
+          {CODE_LANGS.map((l) => (
+            <option key={l} value={l}>
+              {l === "" ? "언어 선택" : l}
+            </option>
+          ))}
+        </select>
       )}
     </div>
   );
@@ -157,8 +184,10 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
       }
     },
     extensions: [
-      // StarterKit v3에 Link 포함 — 별도 등록하면 duplicate 경고
-      StarterKit.configure({ link: { openOnClick: false } }),
+      // StarterKit v3에 Link 포함 — 별도 등록하면 duplicate 경고.
+      // codeBlock은 lowlight 버전으로 교체(에디터 안 실시간 하이라이팅).
+      StarterKit.configure({ link: { openOnClick: false }, codeBlock: false }),
+      CodeBlockLowlight.configure({ lowlight }),
       Image,
       Markdown.configure({ html: false, transformPastedText: true }),
     ],

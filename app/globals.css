@@ -419,12 +419,47 @@ article h3 {
 .editor-body:focus-visible {
   outline: none !important;
 }
-/* 에디터 코드블록 — 본문은 shiki가 글자색을 입히지만 에디터는 생 <pre>라
-   라이트 모드 검정 글자가 어두운 배경에 묻힌다. 밝은 글자·커서로 고정. */
+/* 에디터 코드블록 — 본문은 shiki가 글자색을 입히지만 에디터는 lowlight(hljs)라
+   토큰 색을 직접 준다. 기본 글자·커서는 밝게(어두운 블록 배경 위). */
 .editor-body pre,
 .editor-body pre code {
   color: #e8e8e4;
   caret-color: #e8e8e4;
+}
+/* hljs 토큰 — github-dark 계열 최소 세트 */
+.editor-body pre .hljs-keyword,
+.editor-body pre .hljs-selector-tag,
+.editor-body pre .hljs-meta { color: #ff7b72; }
+.editor-body pre .hljs-string,
+.editor-body pre .hljs-regexp,
+.editor-body pre .hljs-attr { color: #a5d6ff; }
+.editor-body pre .hljs-comment,
+.editor-body pre .hljs-quote { color: #8b949e; font-style: italic; }
+.editor-body pre .hljs-title,
+.editor-body pre .hljs-function .hljs-title { color: #d2a8ff; }
+.editor-body pre .hljs-number,
+.editor-body pre .hljs-literal,
+.editor-body pre .hljs-built_in { color: #79c0ff; }
+.editor-body pre .hljs-name,
+.editor-body pre .hljs-type,
+.editor-body pre .hljs-class .hljs-title { color: #7ee787; }
+.editor-body pre .hljs-variable,
+.editor-body pre .hljs-template-variable,
+.editor-body pre .hljs-property { color: #ffa657; }
+
+/* 툴바 언어 선택 (코드블록 안에서만 표시) */
+.ed-lang {
+  margin-left: auto;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--soft);
+  color: var(--fg);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
 }
 .editor-body p.is-editor-empty:first-child::before {
   content: "본문을 쓰세요…";
