@@ -42,6 +42,8 @@ html {
 }
 
 /* 키보드 포커스 — 모든 인터랙티브 요소에 또렷한 outline (마우스 클릭엔 안 뜸) */
+/* border-radius를 여기서 강제하면 원형 요소(테마 토글)가 각지게 변형된다 —
+   outline은 각 요소의 자기 radius를 따라간다(모던 브라우저). */
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
@@ -49,7 +51,6 @@ textarea:focus-visible,
 [tabindex]:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  border-radius: 4px;
 }
 
 body {
@@ -117,9 +118,12 @@ body {
   cursor: pointer;
   transition: transform 0.4s cubic-bezier(0.3, 1.6, 0.4, 1), border-color 0.3s;
 }
-.theme-toggle:hover {
-  transform: rotate(40deg) scale(1.12);
-  border-color: var(--dim);
+/* hover 없는 터치 기기에선 :hover가 탭 후 고정(sticky)돼 기울어진 채 남는다 — 포인터 기기에서만 */
+@media (hover: hover) {
+  .theme-toggle:hover {
+    transform: rotate(40deg) scale(1.12);
+    border-color: var(--dim);
+  }
 }
 .theme-toggle svg {
   width: 14px;
@@ -155,12 +159,15 @@ body {
   transition: transform 0.32s cubic-bezier(0.65, 0, 0.35, 1);
   z-index: -1;
 }
-.tag:hover {
-  color: var(--bg);
-  border-color: var(--fg);
-}
-.tag:hover::before {
-  transform: translateY(0);
+/* 터치 기기 sticky hover 방지 — 포인터 기기에서만 채움 효과 */
+@media (hover: hover) {
+  .tag:hover {
+    color: var(--bg);
+    border-color: var(--fg);
+  }
+  .tag:hover::before {
+    transform: translateY(0);
+  }
 }
 .tag.on {
   background: var(--fg);
@@ -354,9 +361,12 @@ body {
 .prose hr { border: 0; border-top: 1px solid var(--line); margin: 2.4em 0; }
 .prose strong { font-weight: 750; }
 
-/* 코드블록 (rehype-pretty-code) — 라이트에서도 어두운 블록 유지 */
+/* 코드블록 (rehype-pretty-code) — 라이트에서도 어두운 블록 유지.
+   기본 글자색은 밝게: 언어 없는 ```블록은 shiki가 색을 안 입혀
+   라이트 모드 검정 글자가 배경에 묻힌다(안전망 — 토큰 색은 인라인이 이김). */
 pre {
   background: #121216 !important;
+  color: #e8e8e4;
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 18px 18px;

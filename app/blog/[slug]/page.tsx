@@ -199,7 +199,8 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           components={mdxComponents}
           options={{
             mdxOptions: {
-              rehypePlugins: [rehypeSlug, [rehypePrettyCode, { theme: "github-dark" }]],
+              // defaultLang: 언어 없는 ```블록도 shiki가 plaintext로 색을 입히게 (없으면 스킵돼 무색)
+              rehypePlugins: [rehypeSlug, [rehypePrettyCode, { theme: "github-dark", defaultLang: "plaintext" }]],
             },
           }}
         />
