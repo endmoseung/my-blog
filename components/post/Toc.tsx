@@ -37,12 +37,24 @@ export default function Toc() {
 
   if (headings.length < 2) return null;
 
+  // 전역 smooth는 페이지 전환까지 느리게 만들어 꺼둔 상태(globals.css) —
+  // 목차 클릭만 부드럽게 이동한다. reduced-motion이면 즉시 점프 유지.
+  const go = (e: React.MouseEvent, id: string) => {
+    e.preventDefault();
+    const el = document.getElementById(id);
+    if (!el) return;
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({ behavior: reduced ? "auto" : "smooth" }); // scroll-margin-top(24px)은 CSS가 반영
+    history.replaceState(null, "", `#${id}`); // 해시는 남기되 브라우저 기본 점프는 막음
+  };
+
   return (
     <nav className="toc" aria-label="목차">
       {headings.map((h) => (
         <a
           key={h.id}
           href={`#${h.id}`}
+          onClick={(e) => go(e, h.id)}
           className={active === h.id ? "toc-a on" : "toc-a"}
           style={{ paddingLeft: h.level === 3 ? 14 : 0 }}
         >
