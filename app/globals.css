@@ -571,6 +571,14 @@ article h3 {
     display: inline-flex;
     align-items: center;
   }
+  /* 테마 토글은 min-height 44px가 세로만 늘려 타원이 된다 —
+     가로세로 같이 키운 40px 원으로 (탭 영역 유지 + 원형 유지) */
+  header.site-header .theme-toggle {
+    min-height: 0;
+    width: 40px;
+    height: 40px;
+    display: grid;
+  }
   /* 모바일에선 행 밀림·프리뷰 비활성 (hover 없음) */
   .row:hover .row-t { transform: none; }
   .preview-card { display: none; }
