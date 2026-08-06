@@ -34,17 +34,25 @@ export default function ThemeToggle() {
     const x = e.clientX;
     const y = e.clientY;
     const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+    const root = document.documentElement;
+
+    // body의 배경 페이드가 원형 clip과 같이 돌면 원 바깥이 먼저 새 색으로 바뀌어
+    // 경계가 퍼져 보인다 — 전환이 끝날 때까지만 페이드를 끈다.
+    root.classList.add("vt-theme");
+
     const vt = document.startViewTransition(() => {
       // startViewTransition은 콜백 완료 시점의 DOM을 스냅샷한다 —
       // React 업데이트를 동기로 밀어넣어야 새 테마가 스냅샷에 잡힌다.
       flushSync(flip);
     });
     vt.ready.then(() => {
-      document.documentElement.animate(
+      root.animate(
         { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
         { duration: 520, easing: "cubic-bezier(.2,0,.2,1)", pseudoElement: "::view-transition-new(root)" },
       );
     });
+    // finished는 전환이 끝나거나 중간에 스킵돼도 정착되므로 여기서 되돌린다.
+    vt.finished.finally(() => root.classList.remove("vt-theme"));
   };
 
   return (
