@@ -28,8 +28,8 @@ export default function SearchPage() {
         검색
       </h1>
       <p style={{ color: "var(--dim)", fontSize: ".92rem", marginBottom: 20, lineHeight: 1.6 }}>
-        제목·태그뿐 아니라 글 <strong style={{ color: "var(--fg)", fontWeight: 700 }}>본문 내용까지</strong> 함께 훑어,
-        검색어와 가장 관련 있는 글을 의미 단위로 찾아줍니다.
+        제목과 태그뿐 아니라 글 <strong style={{ color: "var(--fg)", fontWeight: 700 }}>본문까지</strong> 함께 살펴서,
+        검색어와 가장 관련 있는 글을 찾아드려요.
       </p>
       <SearchBox docs={docs} />
     </>

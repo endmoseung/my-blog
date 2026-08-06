@@ -42,11 +42,11 @@ export default function SearchBox({ docs }: { docs: SearchDoc[] }) {
           </p>
         ) : hits.length === 0 ? (
           <p style={{ color: "var(--dim)", fontSize: ".95rem", padding: "14px 0" }}>
-            “{q}” 에 맞는 글이 없네요. 다른 말로 찾아볼까요?
+“{q}”에 대한 검색 결과가 없어요. 다른 말로 찾아볼까요?
           </p>
         ) : (
           <>
-            <p style={{ color: "var(--dim)", fontSize: ".8rem", padding: "12px 0 4px" }}>{hits.length}개 찾음</p>
+            <p style={{ color: "var(--dim)", fontSize: ".8rem", padding: "12px 0 4px" }}>{hits.length}개를 찾았어요</p>
             {hits.map((h) => (
               <Link key={h.slug} href={postPath(h.slug)} className="row">
                 <span>

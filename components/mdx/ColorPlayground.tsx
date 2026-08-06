@@ -36,7 +36,7 @@ export default function ColorPlayground() {
         aria-valuetext={`색상 ${hue}도`}
       />
       <p style={{ color: "var(--muted)", fontSize: ".85rem", marginTop: 8 }}>
-        hue: {hue}° — 슬라이더를 움직여봐! 🎨
+        hue: {hue}° — 슬라이더를 움직여보세요 🎨
       </p>
     </div>
   );

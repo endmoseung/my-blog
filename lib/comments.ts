@@ -81,17 +81,17 @@ export async function addComment(opts: {
 
   const name = opts.authorName.trim();
   const body = opts.body.trim();
-  if (name.length < 1 || name.length > 40) return { ok: false, error: "이름은 1~40자로 입력해줘." };
-  if (body.length < 1 || body.length > 4000) return { ok: false, error: "댓글은 1~4000자로 입력해줘." };
+  if (name.length < 1 || name.length > 40) return { ok: false, error: "이름은 1~40자로 입력해주세요." };
+  if (body.length < 1 || body.length > 4000) return { ok: false, error: "댓글은 1~4000자로 입력해주세요." };
 
   const sb = getPublicClient();
-  if (!sb) return { ok: false, error: "댓글 기능이 아직 설정되지 않았어." };
+  if (!sb) return { ok: false, error: "댓글 기능이 아직 준비되지 않았어요." };
 
   let ipHash: string;
   try {
     ipHash = hashIp(opts.ip);
   } catch {
-    return { ok: false, error: "댓글 기능이 아직 설정되지 않았어." };
+    return { ok: false, error: "댓글 기능이 아직 준비되지 않았어요." };
   }
 
   // 2) rate limit — 최근 60초에 같은 IP가 3개 이상이면 거부.
@@ -101,7 +101,7 @@ export async function addComment(opts: {
     p_seconds: 60,
   });
   if (!rlErr && typeof recent === "number" && recent >= 3) {
-    return { ok: false, error: "조금 천천히! 잠시 후 다시 시도해줘." };
+    return { ok: false, error: "너무 빠르게 올리고 있어요. 잠시 후 다시 시도해주세요." };
   }
 
   const { error } = await sb.from("comments").insert({
@@ -111,7 +111,7 @@ export async function addComment(opts: {
     body,
     ip_hash: ipHash,
   });
-  if (error) return { ok: false, error: "댓글 저장에 실패했어. 잠시 후 다시 시도해줘." };
+  if (error) return { ok: false, error: "댓글을 저장하지 못했어요. 잠시 후 다시 시도해주세요." };
   return { ok: true };
 }
 
@@ -122,7 +122,7 @@ export async function toggleReaction(opts: {
   reactorKey: string;
 }): Promise<AddResult> {
   const sb = getPublicClient();
-  if (!sb) return { ok: false, error: "비활성" };
+  if (!sb) return { ok: false, error: "댓글 기능이 아직 준비되지 않았어요." };
   const { data: existing } = await sb
     .from("comment_reactions")
     .select("id")
@@ -146,11 +146,11 @@ export async function toggleReaction(opts: {
 // 관리자 삭제(숨김) — service_role 필요. 비밀 토큰으로 보호.
 export async function adminHideComment(commentId: string, token: string): Promise<AddResult> {
   if (!process.env.ADMIN_TOKEN || token !== process.env.ADMIN_TOKEN) {
-    return { ok: false, error: "권한 없음" };
+    return { ok: false, error: "권한이 없어요." };
   }
   const admin = getAdminClient();
-  if (!admin) return { ok: false, error: "관리자 키 미설정" };
+  if (!admin) return { ok: false, error: "관리자 키가 설정되지 않았어요." };
   const { error } = await admin.from("comments").update({ is_hidden: true }).eq("id", commentId);
-  if (error) return { ok: false, error: "삭제 실패" };
+  if (error) return { ok: false, error: "댓글을 숨기지 못했어요." };
   return { ok: true };
 }

@@ -96,8 +96,7 @@ export default function Home() {
           <br />그 과정을 여기에 남깁니다.
         </h1>
         <p style={{ marginTop: 16, fontSize: 15, color: "var(--dim)", maxWidth: "46ch" }}>
-          React, Next.js, AWS — 그리고 이직과 회고까지. velog 시절부터 쌓아온{" "}
-          {posts.length}편의 기록.
+          개발자의 가치는 코드가 아니라 서비스와 사람에게 있다고 생각합니다.
         </p>
       </section>
 

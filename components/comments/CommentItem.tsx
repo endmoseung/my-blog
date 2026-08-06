@@ -9,7 +9,7 @@ const ADMIN_KEY = "blog_admin_token";
 
 const EMOJIS = ["❤️", "👍", "😂", "🎉", "🤔"];
 const EMOJI_LABEL: Record<string, string> = {
-  "❤️": "좋아요", "👍": "추천", "😂": "웃겨요", "🎉": "축하", "🤔": "음…",
+  "❤️": "좋아요", "👍": "추천해요", "😂": "웃겨요", "🎉": "축하해요", "🤔": "생각해볼 만해요",
 };
 const REACTOR_KEY = "blog_reactor_key";
 
@@ -73,7 +73,7 @@ export default function CommentItem({
       const res = await hideComment(comment.id, token!, postSlug);
       if (!res.ok) {
         localStorage.removeItem(ADMIN_KEY);
-        window.alert("권한이 없거나 실패했어요. 토큰을 다시 확인해주세요.");
+        window.alert(`${res.error} 토큰을 다시 확인해주세요.`);
         return;
       }
       router.refresh();

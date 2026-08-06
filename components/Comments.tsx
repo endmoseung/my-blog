@@ -15,7 +15,7 @@ export default async function Comments({ postSlug }: { postSlug: string }) {
           fontSize: ".9rem",
         }}
       >
-        💬 댓글은 Supabase 연결 후 활성화돼. (README의 “댓글 켜기” 참고)
+        💬 댓글은 Supabase를 연결하면 켜집니다. (README의 “댓글 켜기” 참고)
       </div>
     );
   }

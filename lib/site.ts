@@ -29,6 +29,8 @@ export const SITE_KEYWORDS = [
 // 작성자 — JSON-LD author·OG article:author·about Person 스키마가 공유.
 export const SITE_AUTHOR = "김승모";
 export const SITE_AUTHOR_GITHUB = "https://github.com/endmoseung";
+export const SITE_AUTHOR_LINKEDIN =
+  "https://www.linkedin.com/in/%EC%8A%B9%EB%AA%A8-%EA%B9%80-848b2b242/";
 
 export function absoluteUrl(path: string): string {
   if (/^https?:\/\//.test(path)) return path;
