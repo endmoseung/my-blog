@@ -101,7 +101,7 @@ export default function CommentForm({
         aria-label={compact ? "답글 내용" : "댓글 내용"}
         value={body}
         onChange={(e) => setBody(e.target.value)}
-        placeholder={compact ? "답글을 남겨주세요" : "댓글을 남겨주세요!"}
+        placeholder={compact ? "답글을 남겨주세요" : "댓글을 남겨주세요"}
         maxLength={4000}
         required
         rows={compact ? 2 : 3}

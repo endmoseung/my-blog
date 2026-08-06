@@ -5,7 +5,7 @@ export default function NotFound() {
     <div style={{ textAlign: "center", padding: "80px 20px" }}>
       <h1 style={{ fontSize: "2.4rem", fontWeight: 800, letterSpacing: "-0.03em" }}>404</h1>
       <p style={{ color: "var(--muted)", marginTop: 12, fontSize: "1.05rem" }}>
-        찾는 페이지가 없네요. 길을 잃으셨나봐요.
+        찾으시는 페이지가 없어요. 주소가 바뀌었거나 삭제된 글일 수 있어요.
       </p>
       <Link
         href="/"

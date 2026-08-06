@@ -47,13 +47,32 @@ export default function PostExplorer({ posts }: { posts: PostMeta[] }) {
       !matchMedia("(prefers-reduced-motion: reduce)").matches;
   }, []);
 
+  /* 커서 추적은 preview와 무관하게 항상 살아 있다.
+     preview에 묶어두면 행을 옮길 때마다 좌표가 초기화돼, 첫 mousemove 전까지
+     직전 위치에 카드가 남는다(호버 영역 밖에 떠 보이던 원인). */
+  const cursor = useRef({ x: -9999, y: -9999 });
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => { cursor.current = { x: e.clientX, y: e.clientY }; };
+    addEventListener("mousemove", onMove, { passive: true });
+    return () => removeEventListener("mousemove", onMove);
+  }, []);
+
+  /* 스크롤·창 이탈 중에는 행과 카드가 어긋나므로 내린다. */
+  useEffect(() => {
+    if (!preview) return;
+    const hide = () => setPreview(null);
+    addEventListener("scroll", hide, { passive: true });
+    addEventListener("blur", hide);
+    return () => { removeEventListener("scroll", hide); removeEventListener("blur", hide); };
+  }, [preview]);
+
   useEffect(() => {
     if (!preview) return;
     let raf = 0;
-    let px = -9999, py = -9999, tx = -9999, ty = -9999, first = true;
-    const onMove = (e: MouseEvent) => { tx = e.clientX; ty = e.clientY; };
+    // 새 호버는 항상 현재 커서에서 시작 — 직전 위치에서 날아오지 않는다.
+    let px = cursor.current.x, py = cursor.current.y;
     const loop = () => {
-      if (first && tx !== -9999) { px = tx; py = ty; first = false; }
+      const { x: tx, y: ty } = cursor.current;
       px += (tx - px) * 0.14;
       py += (ty - py) * 0.14;
       const el = card.current;
@@ -66,16 +85,29 @@ export default function PostExplorer({ posts }: { posts: PostMeta[] }) {
       }
       raf = requestAnimationFrame(loop);
     };
-    addEventListener("mousemove", onMove);
-    raf = requestAnimationFrame(loop);
-    return () => { removeEventListener("mousemove", onMove); cancelAnimationFrame(raf); };
+    loop(); // 페인트 전에 첫 위치를 잡아둔다.
+    return () => cancelAnimationFrame(raf);
   }, [preview]);
 
-  const enter = (p: PostMeta) => { if (enabled.current) setPreview(p); };
+  const enter = (p: PostMeta) => {
+    if (!enabled.current) return;
+    // 커서 좌표를 아직 한 번도 못 받았으면 위치를 못 잡으므로 띄우지 않는다.
+    if (cursor.current.x === -9999) return;
+    setPreview(p);
+  };
   const leave = () => setPreview(null);
 
-  const Row = ({ p }: { p: PostMeta }) => (
+  // 태그를 바꾸면 목록이 통째로 갈리므로 호버 카드도 같이 내린다.
+  const pickTag = (next: string | null) => {
+    setTag(next);
+    setPreview(null);
+  };
+
+  /* 컴포넌트가 아니라 순수 렌더 함수 — 컴포넌트로 두면 매 렌더마다 타입이 새로 생겨
+     행 전체가 언마운트·리마운트되고, 그 과정에서 엉뚱한 mouseleave/enter가 튄다. */
+  const renderRow = (p: PostMeta) => (
     <Link
+      key={p.slug}
       className="row"
       href={postPath(p.slug)}
       onMouseEnter={() => enter(p)}
@@ -91,31 +123,35 @@ export default function PostExplorer({ posts }: { posts: PostMeta[] }) {
     <>
       {/* 태그 필터 */}
       <div className="flex flex-wrap gap-2" style={{ paddingBottom: 24 }}>
-        <button className={`tag${tag === null ? " on" : ""}`} onClick={() => setTag(null)}>
+        <button className={`tag${tag === null ? " on" : ""}`} onClick={() => pickTag(null)}>
           전체
         </button>
         {topTags.map((t) => (
-          <button key={t} className={`tag${tag === t ? " on" : ""}`} onClick={() => setTag(tag === t ? null : t)}>
+          <button key={t} className={`tag${tag === t ? " on" : ""}`} onClick={() => pickTag(tag === t ? null : t)}>
             {t}
           </button>
         ))}
       </div>
 
-      {/* featured — 연도 그룹 위에 accent 라벨로 구분 */}
-      {featured.length > 0 && (
-        <section>
-          <div className="yr" style={{ color: "var(--accent)" }}>FEATURED</div>
-          {featured.map((p) => <Row key={p.slug} p={p} />)}
-        </section>
-      )}
+      {/* 목록 밖으로 커서가 나가면 카드를 내린다 — 행 단위 onMouseLeave만으로는
+          빠르게 빠져나갈 때 놓치는 경우가 있다. */}
+      <div onMouseLeave={leave}>
+        {/* featured — 연도 그룹 위에 accent 라벨로 구분 */}
+        {featured.length > 0 && (
+          <section>
+            <div className="yr" style={{ color: "var(--accent)" }}>FEATURED</div>
+            {featured.map(renderRow)}
+          </section>
+        )}
 
-      {/* 연도별 리스트 */}
-      {years.map(([year, list]) => (
-        <section key={year}>
-          <div className="yr">{year}</div>
-          {list.map((p) => <Row key={p.slug} p={p} />)}
-        </section>
-      ))}
+        {/* 연도별 리스트 */}
+        {years.map(([year, list]) => (
+          <section key={year}>
+            <div className="yr">{year}</div>
+            {list.map(renderRow)}
+          </section>
+        ))}
+      </div>
 
       {filtered.length === 0 && (
         <p style={{ color: "var(--dim)", padding: "40px 0" }}>이 태그의 글이 아직 없어요.</p>

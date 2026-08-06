@@ -45,7 +45,7 @@ export default function CommentSection({
       >
         {comments.length === 0 ? (
           <p style={{ color: "var(--muted)", fontSize: ".95rem" }}>
-            첫 댓글을 남겨주세요!✨
+            첫 댓글을 남겨주세요 ✨
           </p>
         ) : (
           comments.map((c) => (
