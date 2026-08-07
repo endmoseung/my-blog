@@ -25,7 +25,7 @@ export default function ThemeToggle() {
     const flip = () => setTheme(isDark ? "light" : "dark");
 
     // 클릭 지점에서 원형으로 번지는 전환. View Transitions 미지원(또는 reduced-motion)이면
-    // globals.css의 body transition(0.45s 페이드)이 폴백을 맡는다.
+    // globals.css의 @supports 폴백(배경 페이드)이 대신 맡는다.
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!document.startViewTransition || reduced) {
       flip();
@@ -39,10 +39,6 @@ export default function ThemeToggle() {
     // 가장 먼 모서리까지의 거리 — 어디서 눌러도 화면을 다 덮는다.
     const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
     const root = document.documentElement;
-
-    // body의 배경 페이드가 원형 clip과 같이 돌면 원 바깥이 먼저 새 색으로 바뀌어
-    // 경계가 퍼져 보인다 — 전환이 끝날 때까지만 페이드를 끈다.
-    root.classList.add("vt-theme");
 
     const vt = document.startViewTransition(() => {
       // startViewTransition은 콜백 완료 시점의 DOM을 스냅샷한다 —
@@ -62,8 +58,6 @@ export default function ThemeToggle() {
         },
       );
     });
-    // finished는 전환이 끝나거나 중간에 스킵돼도 정착되므로 여기서 되돌린다.
-    vt.finished.finally(() => root.classList.remove("vt-theme"));
   };
 
   return (

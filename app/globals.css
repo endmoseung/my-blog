@@ -86,14 +86,13 @@ body {
   display: block;
 }
 
-/* 원형 전환이 도는 동안엔 배경 페이드를 끈다. 같이 돌면 페이드가 먼저 끝나
-   원 바깥이 미리 새 색으로 바뀐다. 페이드는 미지원 브라우저용 폴백으로 남긴다. */
-html {
-  transition: background 0.45s ease;
-}
-html.vt-theme,
-html.vt-theme body {
-  transition: none;
+/* 배경 페이드는 View Transitions 미지원 브라우저용 폴백이다. 지원 브라우저에선
+   원형 clip과 같이 돌면 원 바깥이 미리 새 색으로 바뀌므로, 지원 여부로 갈라
+   미지원일 때만 켠다. JS로 클래스를 붙였다 떼면 첫 클릭에 스타일이 덜 자리잡는다. */
+@supports not (view-transition-name: none) {
+  html {
+    transition: background 0.45s ease;
+  }
 }
 
 /* ── 인터랙션 유닛 ─────────────────────────────────────────────── */
