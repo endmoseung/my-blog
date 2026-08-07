@@ -46,9 +46,19 @@ export default function ThemeToggle() {
       flushSync(flip);
     });
     vt.ready.then(() => {
+      // 옛 화면 위에서 원 모양 구멍을 넓혀간다. 새 화면은 그 아래 온전히 깔려
+      // 있어서, 구멍이 커질수록 새 테마가 제 색으로 드러난다.
+      // 구멍은 evenodd로 뚫는다 — 바깥 사각형과 안쪽 원이 겹치는 부분이 빈다.
+      const hole = (rad: number) =>
+        `path(evenodd, "M0 0H${innerWidth}V${innerHeight}H0Z ` +
+        `M${x - rad} ${y}a${rad} ${rad} 0 1 0 ${rad * 2} 0a${rad} ${rad} 0 1 0 ${-rad * 2} 0Z")`;
       root.animate(
-        { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
-        { duration: 520, easing: "cubic-bezier(.2,0,.2,1)", pseudoElement: "::view-transition-new(root)" },
+        { clipPath: [hole(0), hole(r)] },
+        {
+          duration: 520,
+          easing: "cubic-bezier(.2,0,.2,1)",
+          pseudoElement: "::view-transition-old(root)",
+        },
       );
     });
     // finished는 전환이 끝나거나 중간에 스킵돼도 정착되므로 여기서 되돌린다.
