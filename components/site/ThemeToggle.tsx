@@ -31,8 +31,11 @@ export default function ThemeToggle() {
       flip();
       return;
     }
-    const x = e.clientX;
-    const y = e.clientY;
+    // 키보드(Enter·Space)로 누르면 clientX/Y가 0이라 원이 화면 모서리에서 퍼진다.
+    // 그럴 땐 버튼 중심을 기준점으로 삼는다.
+    const box = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX || box.left + box.width / 2;
+    const y = e.clientY || box.top + box.height / 2;
     const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
     const root = document.documentElement;
 
@@ -53,10 +56,16 @@ export default function ThemeToggle() {
         `path(evenodd, "M0 0H${innerWidth}V${innerHeight}H0Z ` +
         `M${x - rad} ${y}a${rad} ${rad} 0 1 0 ${rad * 2} 0a${rad} ${rad} 0 1 0 ${-rad * 2} 0Z")`;
       root.animate(
+        // 끝 반지름은 화면을 딱 덮는 값. 더 키우면 화면이 다 찬 뒤에도 애니메이션이
+        // 계속 돌아 뒷부분이 "멈춘 것처럼" 보인다.
         { clipPath: [hole(0), hole(r)] },
         {
-          duration: 520,
-          easing: "cubic-bezier(.2,0,.2,1)",
+          duration: 440,
+          // 뒤로 갈수록 감속하는 커브(ease-out 계열)는 화면이 절반쯤 찼을 때 이미
+          // 대부분 진행돼버려, 마지막 구간이 한 번에 차는 것처럼 느껴진다.
+          // 눈에 보이는 건 반지름이 아니라 넓이(≈r²)라 앞부분이 특히 빨리 찬다.
+          // 그래서 뒤로 갈수록 살짝 가속하는 커브를 써서 체감 속도를 고르게 만든다.
+          easing: "cubic-bezier(.35,.02,.62,.72)",
           pseudoElement: "::view-transition-old(root)",
         },
       );
