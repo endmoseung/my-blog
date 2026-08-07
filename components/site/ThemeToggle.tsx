@@ -31,8 +31,12 @@ export default function ThemeToggle() {
       flip();
       return;
     }
-    const x = e.clientX;
-    const y = e.clientY;
+    // 원의 중심은 토글 버튼 중심. 키보드(Enter·Space)로 누르면 clientX/Y가 0이라
+    // 화면 모서리에서 퍼지므로, 실제 구현들처럼 버튼 rect를 기준으로 잡는다.
+    const box = e.currentTarget.getBoundingClientRect();
+    const x = box.left + box.width / 2;
+    const y = box.top + box.height / 2;
+    // 가장 먼 모서리까지의 거리 — 어디서 눌러도 화면을 다 덮는다.
     const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
     const root = document.documentElement;
 
@@ -46,9 +50,16 @@ export default function ThemeToggle() {
       flushSync(flip);
     });
     vt.ready.then(() => {
+      // Chrome 공식 데모와 같은 값 — 원이 커지는 동안 보이는 넓이는 반지름의
+      // 제곱으로 늘기 때문에, 가속(ease-in) 커브라야 체감 속도가 고르다.
       root.animate(
         { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] },
-        { duration: 520, easing: "cubic-bezier(.2,0,.2,1)", pseudoElement: "::view-transition-new(root)" },
+        {
+          duration: 500,
+          easing: "ease-in",
+          fill: "forwards",
+          pseudoElement: "::view-transition-new(root)",
+        },
       );
     });
     // finished는 전환이 끝나거나 중간에 스킵돼도 정착되므로 여기서 되돌린다.

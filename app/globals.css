@@ -39,6 +39,9 @@
    헤더 밑에서 멈추는 듯한 어색함을 유발. 페이지 이동은 즉시 최상단으로. */
 html {
   scroll-behavior: auto;
+  /* View Transition 스냅샷은 html 기준으로 찍힌다. 배경이 body에만 있으면
+     스냅샷이 투명해서 원 안팎이 겹쳐 보인다 — 배경은 html이 갖고 있어야 한다. */
+  background: var(--bg);
 }
 
 /* 키보드 포커스 — 모든 인터랙티브 요소에 또렷한 outline (마우스 클릭엔 안 뜸) */
@@ -53,10 +56,11 @@ textarea:focus-visible,
   outline-offset: 2px;
 }
 
+/* 배경은 html이 그린다(위 참고). body까지 같은 색을 칠하면 스냅샷 위에
+   덧그려져 원 바깥이 먼저 바뀌므로, body는 색만 갖고 배경은 비워둔다. */
 body {
-  background: var(--bg);
   color: var(--fg);
-  transition: background 0.45s ease, color 0.45s ease;
+  transition: color 0.45s ease;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -65,17 +69,29 @@ body {
   color: #fff;
 }
 
-/* 테마 원형 전환 — 커스텀 clip 애니메이션이 돌 동안 기본 crossfade를 끈다 */
+/* 테마 원형 전환 — Chrome 공식 데모(jakearchibald/simple-vt-demos)의 표준 CSS.
+   세 줄 다 필요하다:
+   · animation: none      — 기본 crossfade를 끈다. 안 끄면 새 스냅샷이 opacity 0에서
+                            떠오르는 동안 clip이 같이 커져 경계가 뿌옇게 번진다.
+   · mix-blend-mode       — 기본값 plus-lighter는 두 스냅샷이 겹치는 곳을 흰색으로
+                            날려버린다(두 opacity 합이 1일 때만 맞는 블렌드라서).
+   · isolation: auto      — plus-lighter를 안 쓰니 UA의 isolate도 풀어준다. */
+::view-transition-image-pair(root) {
+  isolation: auto;
+}
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
+  display: block;
 }
 
-/* 원형 전환이 도는 동안엔 body의 배경 페이드를 끈다.
-   둘이 같이 돌면 body 페이드(0.45s)가 원형 clip(0.52s)보다 먼저 끝나면서,
-   마지막 구간에 원 바깥이 이미 새 배경색으로 바뀌어 경계가 퍼져 보인다.
-   body 페이드는 View Transitions 미지원 브라우저용 폴백으로만 남긴다. */
+/* 원형 전환이 도는 동안엔 배경 페이드를 끈다. 같이 돌면 페이드가 먼저 끝나
+   원 바깥이 미리 새 색으로 바뀐다. 페이드는 미지원 브라우저용 폴백으로 남긴다. */
+html {
+  transition: background 0.45s ease;
+}
+html.vt-theme,
 html.vt-theme body {
   transition: none;
 }
