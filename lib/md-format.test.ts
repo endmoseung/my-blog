@@ -40,6 +40,10 @@ describe("formatMarkdown — 감싸기(굵게·기울임·취소선·코드)", (
     expect(apply("**세상**", 2, 4, "italic").doc).toBe("***세상***");
   });
 
+  it("굵게를 마커까지 선택하고 기울임을 눌러도 굵게가 풀리지 않는다", () => {
+    expect(apply("**세상**", 0, 6, "italic").doc).toBe("***세상***");
+  });
+
   it("굵고 기울인 글자에서 기울임만 풀 수 있다", () => {
     expect(apply("***세상***", 3, 5, "italic").doc).toBe("**세상**");
   });
@@ -90,6 +94,10 @@ describe("formatMarkdown — 링크·코드 블록", () => {
     const r = apply("앞 문장", 4, 4, "codeblock");
     expect(r.doc).toBe("앞 문장\n```\n\n```");
     expect(r.doc.slice(0, r.cursor)).toBe("앞 문장\n```");
+  });
+
+  it("줄 중간이면 커서 뒤 글자를 닫는 ``` 다음 줄로 내린다", () => {
+    expect(apply("abcdef", 3, 3, "codeblock").doc).toBe("abc\n```\n\n```\ndef");
   });
 
   it("선택한 줄을 코드 블록으로 감싼다", () => {

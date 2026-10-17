@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { makeSlug, autoExcerpt, addTags, type DraftMeta } from "@/lib/editor";
+import { makeSlug, autoExcerpt, addTags, localDate, type DraftMeta } from "@/lib/editor";
+import { parseDraft, pickStart, isDirty, type Draft } from "@/lib/editor-draft";
 import type { FormatKind } from "@/lib/md-format";
 import MarkdownInput, { type MarkdownInputApi } from "./MarkdownInput";
 import Preview from "./Preview";
@@ -19,32 +20,8 @@ export type EditorInitial = {
   date: string;
 };
 
-// 브라우저(localStorage)에 남기는 임시저장본. 키(editor_draft_v1)는 예전 편집기와 같게 둔다 —
-// 예전 초안({title, tags, excerpt, featured, markdown})도 그대로 읽힌다.
-type Draft = { title: string; tags: string[]; markdown: string; excerpt: string; featured: boolean; coverImage: string; slug: string };
-
-function isDraft(v: unknown): v is Draft {
-  if (typeof v !== "object" || v === null) return false;
-  return "title" in v && typeof v.title === "string" && "markdown" in v && typeof v.markdown === "string";
-}
-
-function loadDraft(key: string): Draft | null {
-  try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(key) ?? "null");
-    if (!isDraft(parsed) || (!parsed.title && !parsed.markdown)) return null;
-    return {
-      title: parsed.title,
-      markdown: parsed.markdown,
-      tags: Array.isArray(parsed.tags) ? parsed.tags.map(String) : [],
-      excerpt: typeof parsed.excerpt === "string" ? parsed.excerpt : "",
-      featured: parsed.featured === true,
-      coverImage: typeof parsed.coverImage === "string" ? parsed.coverImage : "",
-      slug: typeof parsed.slug === "string" ? parsed.slug : "",
-    };
-  } catch {
-    return null;
-  }
-}
+// 임시저장 키(editor_draft_v1)는 예전 편집기와 같게 둔다 — 새 글 초안은 예전 형식도 그대로 읽힌다.
+// 수정 모드에서 어떤 초안을 믿는지는 lib/editor-draft.ts의 pickStart가 정한다.
 
 const TOOLBAR: Array<{ kind: FormatKind; label: React.ReactNode; title: string } | "|" | "image"> = [
   { kind: "h1", label: <>H<sub>1</sub></>, title: "제목 1" },
@@ -68,10 +45,23 @@ async function uploadImage(file: File, slug: string): Promise<string | null> {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("slug", slug || "draft");
-  const res = await fetch("/editor/api/image", { method: "POST", body: fd });
-  if (!res.ok) return null;
-  const data: unknown = await res.json();
-  return typeof data === "object" && data !== null && "url" in data && typeof data.url === "string" ? data.url : null;
+  try {
+    const res = await fetch("/editor/api/image", { method: "POST", body: fd });
+    if (!res.ok) return null;
+    const data: unknown = await res.json();
+    return typeof data === "object" && data !== null && "url" in data && typeof data.url === "string" ? data.url : null;
+  } catch {
+    // dev 서버가 재시작 중이면 fetch가 reject된다 — 실패로 돌려 호출한 쪽이 상태를 풀게 한다.
+    return null;
+  }
+}
+
+function persistDraft(key: string, value: Draft, base: Draft) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ value, base }));
+  } catch {
+    /* 저장소가 가득 찼거나 막힘 — 파일 저장에는 영향 없음 */
+  }
 }
 
 const now = () => new Date().toLocaleTimeString("ko-KR", { hour12: false });
@@ -82,9 +72,8 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
   const isEdit = !!initial;
   const draftKey = isEdit ? `editor_draft_v1:${initial.slug}` : "editor_draft_v1";
 
-  // 시작 값: 임시저장본이 있으면 그것, 없으면 원본(수정) 또는 빈 글(새 글)
+  // 시작 값: 믿을 수 있는 임시저장본이 있으면 그것, 없으면 원본(수정) 또는 빈 글(새 글)
   const [start] = useState(() => {
-    const draft = loadDraft(draftKey);
     const base: Draft = {
       title: initial?.title ?? "",
       tags: initial?.tags ?? [],
@@ -94,9 +83,13 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
       coverImage: initial?.coverImage ?? "",
       slug: initial?.slug ?? "",
     };
-    // 원본과 똑같은 임시저장본(열어 두기만 하고 자동 저장된 경우)은 복원으로 알리지 않는다.
-    const restored = !!draft && JSON.stringify(draft) !== JSON.stringify(base);
-    return { value: restored && draft ? draft : base, restored };
+    let raw: string | null = null;
+    try {
+      raw = localStorage.getItem(draftKey);
+    } catch {
+      /* 저장소를 못 쓰는 브라우저 — 초안 없이 시작 */
+    }
+    return { ...pickStart(parseDraft(raw), base, isEdit), base };
   });
 
   const [title, setTitle] = useState(start.value.title);
@@ -132,8 +125,11 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
     latest.current = { title, tags, markdown, ...publish };
   }, [title, tags, markdown, publish]);
 
+  // 초안은 {value, base}로 저장한다. base(이 초안을 시작할 때의 원본)가 있어야 다음에 열 때
+  // 그사이 파일이 바뀌었는지 알 수 있다.
+  const writeDraft = () => persistDraft(draftKey, latest.current, start.base);
   const saveDraft = () => {
-    localStorage.setItem(draftKey, JSON.stringify(latest.current));
+    writeDraft();
     setStatus(`임시저장 ${now()}`);
   };
 
@@ -143,11 +139,13 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
   useEffect(() => {
     if (saved) return;
     const id = setInterval(() => {
-      localStorage.setItem(draftKey, JSON.stringify(latest.current));
+      // 바뀐 게 없으면 남기지 않는다 — 원본 사본이 초안으로 쌓이지 않게
+      if (!isDirty(latest.current, start.base)) return;
+      persistDraft(draftKey, latest.current, start.base);
       setStatus(`자동 임시저장 ${now()}`);
     }, AUTOSAVE_MS);
     return () => clearInterval(id);
-  }, [draftKey, saved]);
+  }, [draftKey, saved, start.base]);
 
   const insertImages = async (files: File[]) => {
     setStatus("이미지 올리는 중…");
@@ -169,25 +167,36 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
 
   const suggestions = knownTags.filter((t) => !tags.includes(t) && t.toLowerCase().includes(tagInput.trim().toLowerCase())).slice(0, 8);
 
+  // 출간 창에서 고친 값을 부모에 남긴다. URL을 건드리지 않았으면 계속 제목을 따라가도록 비워 둔다.
+  const keepFields = (fields: PublishFields) => setPublish({ ...fields, slug: fields.slug === slug ? publish.slug : fields.slug });
+
   const doPublish = async (fields: PublishFields) => {
-    setPublish(fields);
+    keepFields(fields);
     setSaving(true);
     setSaveError(null);
     const meta: DraftMeta = {
       title: title.trim(),
-      date: initial?.date ?? new Date().toISOString().slice(0, 10),
+      date: initial?.date ?? localDate(),
       excerpt: fields.excerpt.trim() || autoExcerpt(markdown),
       tags,
       featured: fields.featured,
       coverImage: fields.coverImage,
     };
-    const res = await fetch("/editor/api/save", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-        isEdit ? { mode: "update", slug: initial.slug, meta, markdown } : { mode: "create", slug: fields.slug, meta, markdown },
-      ),
-    });
+    let res: Response;
+    try {
+      res = await fetch("/editor/api/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          isEdit ? { mode: "update", slug: initial.slug, meta, markdown } : { mode: "create", slug: fields.slug, meta, markdown },
+        ),
+      });
+    } catch {
+      // 네트워크 실패에서도 출간 창이 잠기지 않게 저장 중 상태를 푼다.
+      setSaving(false);
+      setSaveError("저장 요청을 보내지 못했어요. dev 서버가 켜져 있는지 확인해 주세요.");
+      return;
+    }
     const data: unknown = await res.json().catch(() => null);
     setSaving(false);
     const obj = typeof data === "object" && data !== null ? data : {};
@@ -195,7 +204,11 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
       setSaveError("error" in obj && typeof obj.error === "string" ? obj.error : "저장에 실패했어요.");
       return;
     }
-    localStorage.removeItem(draftKey);
+    try {
+      localStorage.removeItem(draftKey);
+    } catch {
+      /* 무시 */
+    }
     setModalOpen(false);
     setDone({
       slug: "slug" in obj && typeof obj.slug === "string" ? obj.slug : slug,
@@ -204,9 +217,19 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
   };
 
   const exit = () => {
-    // 나가도 쓰던 내용이 남도록 임시저장부터
-    if (title || markdown) localStorage.setItem(draftKey, JSON.stringify(latest.current));
+    // 나가도 쓰던 내용이 남도록 바뀐 게 있으면 임시저장부터
+    if (isDirty(latest.current, start.base)) writeDraft();
     window.location.href = "/editor";
+  };
+
+  // 복원한 초안을 버리고 파일(또는 빈 글)로 다시 연다.
+  const discardDraft = () => {
+    try {
+      localStorage.removeItem(draftKey);
+    } catch {
+      /* 무시 */
+    }
+    window.location.reload();
   };
 
   /* 출간 완료 화면 */
@@ -235,7 +258,17 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
   }
 
   return (
-    <div className="ved" data-tab={tab}>
+    <div
+      className="ved"
+      data-tab={tab}
+      onKeyDown={(e) => {
+        // ⌘S / Ctrl+S — 어느 입력칸에 있든 브라우저 「페이지 저장」 대신 임시저장
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+          e.preventDefault();
+          saveDraft();
+        }
+      }}
+    >
       {/* 좁은 화면 전용 — 작성/미리보기 전환 */}
       <div className="ved-tabs" role="tablist" aria-label="보기 전환">
         <button role="tab" aria-selected={tab === "write"} onClick={() => setTab("write")}>
@@ -256,7 +289,8 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
             aria-label="제목"
             onChange={(e) => setTitle(e.target.value.replace(/\n/g, " "))}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              // 한글 조합 중 Enter는 글자 확정용 — 그때 본문으로 넘기면 남은 Enter가 본문에 줄바꿈을 넣는다
+              if (e.key === "Enter" && !e.nativeEvent.isComposing) {
                 e.preventDefault();
                 inputApi.current?.focus();
               }
@@ -356,7 +390,6 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
           apiRef={inputApi}
           onChange={setMarkdown}
           onImageFiles={insertImages}
-          onSaveShortcut={saveDraft}
           onScrollRatio={(r) => {
             const el = previewPane.current;
             if (el) el.scrollTop = r * (el.scrollHeight - el.clientHeight);
@@ -369,7 +402,12 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
           ← 나가기
         </button>
         <span className="ved-status" aria-live="polite">
-          {status ?? "20초마다 자동 임시저장해요"}
+          {status ?? "바뀐 내용은 20초마다 자동 임시저장해요"}
+          {start.restored && (
+            <button type="button" className="ved-link-btn" style={{ marginLeft: 10 }} onClick={discardDraft}>
+              {isEdit ? "파일 내용으로 되돌리기" : "비우고 새로 쓰기"}
+            </button>
+          )}
         </span>
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" className="ved-btn-ghost" onClick={saveDraft}>
@@ -403,7 +441,10 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
           error={saveError}
           mdxError={mdxError}
           onUploadCover={(file) => uploadImage(file, slug)}
-          onCancel={() => setModalOpen(false)}
+          onCancel={(fields) => {
+            keepFields(fields);
+            setModalOpen(false);
+          }}
           onPublish={doPublish}
         />
       )}

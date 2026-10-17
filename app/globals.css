@@ -573,7 +573,8 @@ article h3 {
   display: flex;
   align-items: center;
   gap: 12px;
-  height: 64px;
+  /* border-box라 safe-area 여백만큼 높이를 더해 줘야 버튼 자리가 줄지 않는다 */
+  min-height: calc(64px + env(safe-area-inset-bottom, 0px));
   padding: 0 16px;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.08);

@@ -44,8 +44,11 @@ function wrap(doc: string, from: number, to: number, marker: string): Edit {
   }
 
   // 마커까지 함께 선택했으면 푼다: [**세상**] → 세상
+  // (굵게 ** 를 통째로 고르고 기울임을 눌렀을 때 ** 를 * 로 벗기지 않도록 같은 개수 규칙을 쓴다)
   const sel = doc.slice(from, to);
-  if (sel.length > m * 2 && sel.startsWith(marker) && sel.endsWith(marker)) {
+  const lead = runAfter(sel, 0, ch);
+  const trail = runBefore(sel, sel.length, ch);
+  if (sel.length > m * 2 && hasMarker(lead, marker) && hasMarker(trail, marker)) {
     const inner = sel.slice(m, -m);
     return { from, to, insert: inner, selFrom: from, selTo: from + inner.length };
   }
@@ -99,7 +102,9 @@ function link(doc: string, from: number, to: number): Edit {
 function codeblock(doc: string, from: number, to: number): Edit {
   const sel = doc.slice(from, to);
   const lead = from > 0 && doc[from - 1] !== "\n" ? "\n" : "";
-  const insert = `${lead}\`\`\`\n${sel}\n\`\`\``;
+  // 닫는 ``` 뒤에 글자가 붙으면 CommonMark가 블록을 닫지 않는다 → 뒤 글자는 다음 줄로
+  const trail = to < doc.length && doc[to] !== "\n" ? "\n" : "";
+  const insert = `${lead}\`\`\`\n${sel}\n\`\`\`${trail}`;
   // 언어 이름을 바로 칠 수 있게 여는 ``` 바로 뒤에 커서
   const cursor = from + lead.length + 3;
   return { from, to, insert, selFrom: cursor, selTo: cursor };

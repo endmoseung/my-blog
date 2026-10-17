@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import matter from "gray-matter";
-import { makeSlug, makeFrontmatter, autoExcerpt, updateMdx, addTags } from "./editor";
+import { makeSlug, makeFrontmatter, autoExcerpt, updateMdx, addTags, localDate } from "./editor";
 
 describe("makeSlug", () => {
   it("한글은 유지하고 공백은 하이픈으로", () => {
@@ -38,6 +38,13 @@ describe("makeFrontmatter", () => {
     expect(matter(makeFrontmatter({ ...meta, coverImage: "/images/a/1.png" })).data.coverImage).toBe("/images/a/1.png");
     expect(makeFrontmatter({ ...meta, coverImage: "" })).not.toContain("coverImage");
     expect(makeFrontmatter(meta)).not.toContain("coverImage");
+  });
+});
+
+describe("localDate", () => {
+  it("UTC가 아니라 이 컴퓨터 시간대의 날짜를 쓴다 (KST 새벽에 전날로 찍히지 않게)", () => {
+    expect(localDate(new Date(2026, 0, 2, 0, 30))).toBe("2026-01-02");
+    expect(localDate(new Date(2026, 11, 31, 23, 59))).toBe("2026-12-31");
   });
 });
 

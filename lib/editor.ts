@@ -36,6 +36,12 @@ export function makeFrontmatter(meta: DraftMeta): string {
   return lines.join("\n") + "\n";
 }
 
+// 오늘 날짜(YYYY-MM-DD). toISOString()은 UTC라 KST 00:00~08:59에 쓰면 전날로 찍힌다.
+export function localDate(d: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 // 태그 입력값 → 태그 목록. velog처럼 쉼표로 여러 개를 한 번에 넣을 수 있다.
 export function addTags(existing: string[], raw: string): string[] {
   const next = [...existing];

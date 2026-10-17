@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { makeSlug, makeFrontmatter, updateMdx, type DraftMeta } from "@/lib/editor";
+import { makeSlug, makeFrontmatter, updateMdx, localDate, type DraftMeta } from "@/lib/editor";
 
 const POSTS_DIR = path.join(process.cwd(), "content/posts");
 
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         excerpt: meta.excerpt,
         tags: meta.tags,
         featured: meta.featured,
-        updatedDate: new Date().toISOString().slice(0, 10),
+        updatedDate: localDate(),
         // 출간 창에서 대표 이미지를 뺐으면 빈 문자열 → frontmatter에서도 지운다.
         coverImage: meta.coverImage ?? "",
       },

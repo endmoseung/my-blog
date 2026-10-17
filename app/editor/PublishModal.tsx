@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { makeSlug } from "@/lib/editor";
 
 export const EXCERPT_MAX = 150;
 
@@ -15,7 +16,8 @@ type Props = {
   // 미리보기 변환 오류 — 저장을 막지는 않고 경고만 한다(미리보기가 마지막 입력을 아직 못 따라왔을 수 있어서).
   mdxError: string | null;
   onUploadCover(file: File): Promise<string | null>;
-  onCancel(): void;
+  // 취소해도 창에서 고친 값(올린 대표 이미지 등)은 부모가 이어받는다.
+  onCancel(fields: PublishFields): void;
   onPublish(fields: PublishFields): void;
 };
 
@@ -28,33 +30,57 @@ export default function PublishModal({ isEdit, initial, autoExcerpt, busy, error
   const dialog = useRef<HTMLDivElement>(null);
   const set = (patch: Partial<PublishFields>) => setFields((f) => ({ ...f, ...patch }));
 
-  // 열릴 때 한 번만 창 안으로 포커스를 옮긴다. 부모가 다시 그려져도(자동 임시저장 등) 포커스를 뺏지 않게
-  // Esc 처리는 최신 콜백을 ref로 읽는다.
-  const latest = useRef({ busy, onCancel });
+  // 열릴 때 한 번만 창 안으로 포커스를 옮기고, 닫히면 열기 전 자리(「출간하기」 버튼)로 돌려준다.
+  // 부모가 다시 그려져도(자동 임시저장 등) 포커스를 뺏지 않게 최신 값은 ref로 읽는다.
+  const latest = useRef({ busy, onCancel, fields });
   useEffect(() => {
-    latest.current = { busy, onCancel };
+    latest.current = { busy, onCancel, fields };
   });
   useEffect(() => {
+    const opener = document.activeElement;
     dialog.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !latest.current.busy) latest.current.onCancel();
+      if (e.key === "Escape" && !latest.current.busy) latest.current.onCancel(latest.current.fields);
+      // Tab이 창 밖(뒤의 편집기)으로 나가지 않게 처음·끝에서 돌린다.
+      if (e.key === "Tab" && dialog.current) {
+        const items = dialog.current.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]):not([hidden]), textarea");
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (!first || !last) return;
+        if (e.shiftKey && (document.activeElement === first || document.activeElement === dialog.current)) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (opener instanceof HTMLElement) opener.focus();
+    };
   }, []);
+
+  const savedSlug = makeSlug(fields.slug);
 
   const pickCover = async (file: File | undefined) => {
     if (!file) return;
     setUploading(true);
     setUploadError(null);
-    const url = await onUploadCover(file);
-    setUploading(false);
+    let url: string | null = null;
+    try {
+      url = await onUploadCover(file);
+    } finally {
+      setUploading(false);
+    }
     if (url) set({ coverImage: url });
     else setUploadError("이미지를 올리지 못했어요.");
   };
 
   return (
-    <div className="ved-modal-bg" onMouseDown={(e) => e.target === e.currentTarget && !busy && onCancel()}>
+    <div className="ved-modal-bg" onMouseDown={(e) => e.target === e.currentTarget && !busy && onCancel(fields)}>
       <div ref={dialog} className="ved-modal" role="dialog" aria-modal="true" aria-labelledby="ved-modal-title" tabIndex={-1}>
         <h2 id="ved-modal-title" className="ved-modal-h">
           {isEdit ? "수정한 글 저장" : "출간 설정"}
@@ -119,7 +145,11 @@ export default function PublishModal({ isEdit, initial, autoExcerpt, busy, error
               />
             </div>
             <p className="ved-hint">
-              {isEdit ? "이미 공개된 글이라 주소가 바뀌지 않게 고정했어요." : `content/posts/${fields.slug || "…"}.mdx 로 저장돼요.`}
+              {isEdit
+                ? "이미 공개된 글이라 주소가 바뀌지 않게 고정했어요."
+                : savedSlug
+                  ? `content/posts/${savedSlug}.mdx 로 저장돼요.`
+                  : "글자나 숫자를 넣어 주세요. 특수문자는 빠져요."}
             </p>
 
             <h3 className="ved-label" style={{ marginTop: 22 }}>
@@ -138,14 +168,14 @@ export default function PublishModal({ isEdit, initial, autoExcerpt, busy, error
             )}
 
             <div className="ved-modal-actions">
-              <button type="button" className="ved-btn-ghost" onClick={onCancel} disabled={busy}>
+              <button type="button" className="ved-btn-ghost" onClick={() => onCancel(fields)} disabled={busy}>
                 취소
               </button>
               <button
                 type="button"
                 className="ved-btn-primary"
                 onClick={() => onPublish(fields)}
-                disabled={busy || uploading || (!isEdit && !fields.slug.trim())}
+                disabled={busy || uploading || (!isEdit && !savedSlug)}
               >
                 {busy ? "저장 중…" : isEdit ? "수정하기" : "출간하기"}
               </button>

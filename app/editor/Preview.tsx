@@ -49,7 +49,7 @@ export default function Preview({ title, tags, markdown, onErrorChange }: Props)
           signal: ctrl.signal,
         });
         const data: unknown = await res.json();
-        if (!isPreviewResponse(data)) return;
+        if (ctrl.signal.aborted || !isPreviewResponse(data)) return;
         if ("compiled" in data) {
           setCompiled(data.compiled);
           setError(null);
@@ -60,7 +60,10 @@ export default function Preview({ title, tags, markdown, onErrorChange }: Props)
           notify.current(data.error);
         }
       } catch (e) {
-        if (!ctrl.signal.aborted) setError(e instanceof Error ? e.message : String(e));
+        if (ctrl.signal.aborted) return;
+        const message = e instanceof Error ? e.message : String(e);
+        setError(message);
+        notify.current(message);
       }
     }, DEBOUNCE_MS);
     return () => {

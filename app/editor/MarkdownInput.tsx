@@ -22,7 +22,6 @@ type Props = {
   // 입력창 스크롤 위치(0~1) — 미리보기를 같은 비율로 따라 내린다.
   onScrollRatio(ratio: number): void;
   onImageFiles(files: File[]): void;
-  onSaveShortcut(): void;
 };
 
 // 마크다운 기호는 흐리게, 내용은 또렷하게 — velog 입력창의 결.
@@ -57,12 +56,12 @@ function imageFiles(list: FileList | undefined | null): File[] {
   return [...(list ?? [])].filter((f) => f.type.startsWith("image/"));
 }
 
-export default function MarkdownInput({ initialValue, apiRef, onChange, onScrollRatio, onImageFiles, onSaveShortcut }: Props) {
+export default function MarkdownInput({ initialValue, apiRef, onChange, onScrollRatio, onImageFiles }: Props) {
   const host = useRef<HTMLDivElement>(null);
   // 최신 콜백을 ref에 두어, 콜백이 바뀔 때마다 CodeMirror를 다시 만들지 않는다.
-  const handlers = useRef({ onChange, onScrollRatio, onImageFiles, onSaveShortcut });
+  const handlers = useRef({ onChange, onScrollRatio, onImageFiles });
   useEffect(() => {
-    handlers.current = { onChange, onScrollRatio, onImageFiles, onSaveShortcut };
+    handlers.current = { onChange, onScrollRatio, onImageFiles };
   });
   // 처음 마운트할 때의 값만 쓴다(입력창은 비제어). ref로 붙잡아 effect 의존성에서 뺀다.
   const initial = useRef(initialValue);
@@ -100,14 +99,6 @@ export default function MarkdownInput({ initialValue, apiRef, onChange, onScroll
             { key: "Mod-k", run: (v) => runFormat(v, "link") },
             { key: "Mod-e", run: (v) => runFormat(v, "code") },
             { key: "Mod-Shift-x", run: (v) => runFormat(v, "strike") },
-            {
-              key: "Mod-s",
-              preventDefault: true,
-              run: () => {
-                handlers.current.onSaveShortcut();
-                return true;
-              },
-            },
             indentWithTab,
             ...defaultKeymap,
             ...historyKeymap,
