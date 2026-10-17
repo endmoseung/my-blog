@@ -97,7 +97,18 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
     } catch {
       /* 저장소를 못 쓰는 브라우저 — 초안 없이 시작 */
     }
-    return { ...pickStart(parseDraft(raw), base, isEdit), base };
+    const picked = pickStart(parseDraft(raw), base, isEdit);
+    // 지난번에 보관해 둔 예전 초안도 이어서 알린다(출간하거나 열 때까지).
+    let stale = picked.stale;
+    if (isEdit && !stale) {
+      try {
+        const backup = parseDraft(localStorage.getItem(`${draftKey}:stale`))?.value ?? null;
+        if (backup && isDirty(backup, base)) stale = backup;
+      } catch {
+        /* 무시 */
+      }
+    }
+    return { ...picked, stale, base };
   });
 
   const [title, setTitle] = useState(start.value.title);
@@ -147,7 +158,8 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
     setStatus(`임시저장 ${now()}`);
   };
 
-  // 쓰지 않은 예전 초안은 따로 보관한다 — 다음 자동 저장이 같은 키를 덮어도 「예전 임시저장본 열기」로 되찾게.
+  // 쓰지 않은 예전 초안은 따로 보관한다 — 다음 자동 저장이 같은 키를 덮거나 지워도 「예전 임시저장본 열기」로 되찾게.
+  // 수정 모드에서만 생긴다(새 글 키 editor_draft_v1:stale이 slug가 stale인 글의 키와 겹치지 않게 새 글엔 안 씀).
   const staleKey = `${draftKey}:stale`;
   useEffect(() => {
     if (start.stale) persistDraft(staleKey, start.stale, start.base);
@@ -228,7 +240,7 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
       return;
     }
     removeDraft(draftKey);
-    removeDraft(staleKey);
+    if (isEdit) removeDraft(staleKey);
     setModalOpen(false);
     setDone({
       slug: "slug" in obj && typeof obj.slug === "string" ? obj.slug : slug,
@@ -443,7 +455,8 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
             )}
           </button>
         )}
-        {start.stale && (
+        {/* 이번에 고치기 시작했으면 숨긴다 — 누르면 지금 수정을 예전 초안으로 덮어쓰게 되므로 */}
+        {start.stale && !isDirty({ title, tags, markdown, ...publish }, start.base) && (
           <button type="button" className="ved-link-btn ved-draft-action" onClick={openStaleDraft}>
             <span className="ved-long">예전 </span>임시저장본 열기
           </button>

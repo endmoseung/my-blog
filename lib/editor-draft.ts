@@ -69,6 +69,9 @@ export function pickStart(
   isEdit: boolean,
 ): { value: Draft; restored: boolean; stale: Draft | null } {
   if (!stored || !isDirty(stored.value, base)) return { value: base, restored: false, stale: null };
-  if (isEdit && (!stored.base || isDirty(stored.base, base))) return { value: base, restored: false, stale: stored.value };
+  if (isEdit) {
+    if (!stored.base) return { value: base, restored: false, stale: null }; // 예전 편집기 초안 — 믿을 근거가 없다
+    if (isDirty(stored.base, base)) return { value: base, restored: false, stale: stored.value };
+  }
   return { value: stored.value, restored: true, stale: null };
 }

@@ -36,9 +36,9 @@ describe("pickStart", () => {
     expect(pickStart(stored, base, true)).toEqual({ value: base, restored: false, stale: stored.value });
   });
 
-  it("수정 모드: 원본 기록이 없는 예전 초안은 쓰지 않는다", () => {
+  it("수정 모드: 원본 기록이 없는 예전(tiptap) 초안은 쓰지 않고, 파일이 바뀐 것도 아니니 알리지도 않는다", () => {
     const stored = { value: { ...base, markdown: "tiptap이 다시 쓴 본문" }, base: null };
-    expect(pickStart(stored, base, true)).toEqual({ value: base, restored: false, stale: stored.value });
+    expect(pickStart(stored, base, true)).toEqual({ value: base, restored: false, stale: null });
   });
 
   it("초안이 원본과 같으면 복원으로 치지 않는다 (키 순서가 달라도)", () => {
