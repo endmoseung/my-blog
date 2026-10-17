@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { MDXRemote } from "next-mdx-remote/rsc";
-import rehypePrettyCode from "rehype-pretty-code";
-import rehypeSlug from "rehype-slug";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAllPosts, getPostBySlug } from "@/lib/posts";
 import { mdxComponents } from "@/components/mdx/MDXComponents";
+import { blogMdxOptions } from "@/lib/mdx-options";
 import { jsonLdHtml } from "@/lib/json-ld";
 import {
   SITE_URL,
@@ -197,12 +196,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         <MDXRemote
           source={post.content}
           components={mdxComponents}
-          options={{
-            mdxOptions: {
-              // defaultLang: 언어 없는 ```블록도 shiki가 plaintext로 색을 입히게 (없으면 스킵돼 무색)
-              rehypePlugins: [rehypeSlug, [rehypePrettyCode, { theme: "github-dark", defaultLang: "plaintext" }]],
-            },
-          }}
+          options={{ mdxOptions: blogMdxOptions }}
         />
       </div>
 

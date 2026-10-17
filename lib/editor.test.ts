@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import matter from "gray-matter";
-import { makeSlug, makeFrontmatter, autoExcerpt, updateMdx } from "./editor";
+import { makeSlug, makeFrontmatter, autoExcerpt, updateMdx, addTags } from "./editor";
 
 describe("makeSlug", () => {
   it("한글은 유지하고 공백은 하이픈으로", () => {
@@ -32,6 +32,21 @@ describe("makeFrontmatter", () => {
     expect(data.tags).toEqual(meta.tags);
     expect(data.featured).toBe(true);
     expect(content).toContain("본문입니다.");
+  });
+
+  it("대표 이미지가 있으면 coverImage를 쓰고, 없으면 키를 만들지 않는다", () => {
+    expect(matter(makeFrontmatter({ ...meta, coverImage: "/images/a/1.png" })).data.coverImage).toBe("/images/a/1.png");
+    expect(makeFrontmatter({ ...meta, coverImage: "" })).not.toContain("coverImage");
+    expect(makeFrontmatter(meta)).not.toContain("coverImage");
+  });
+});
+
+describe("addTags", () => {
+  it("쉼표로 여러 개를 한 번에 넣고, 앞뒤 공백과 # 을 지운다", () => {
+    expect(addTags([], " react, #nextjs ,")).toEqual(["react", "nextjs"]);
+  });
+  it("이미 있는 태그와 빈 값은 넣지 않는다", () => {
+    expect(addTags(["react"], "react,  ,회고")).toEqual(["react", "회고"]);
   });
 });
 
@@ -82,5 +97,12 @@ source: "https://velog.io/@endmoseung/old"
     const { data } = matter(updateMdx(original, changes, "x"));
     expect(data.date).toBe("2023-06-13");
     expect(data.updatedDate).toBe("2026-07-04");
+  });
+
+  it("coverImage를 주면 쓰고, 빈 문자열이면 지우고, 생략하면 원본을 둔다", () => {
+    const withCover = updateMdx(original, { ...changes, coverImage: "/images/x.png" }, "x");
+    expect(matter(withCover).data.coverImage).toBe("/images/x.png");
+    expect(matter(updateMdx(withCover, { ...changes, coverImage: "" }, "x")).data.coverImage).toBeUndefined();
+    expect(matter(updateMdx(withCover, changes, "x")).data.coverImage).toBe("/images/x.png");
   });
 });

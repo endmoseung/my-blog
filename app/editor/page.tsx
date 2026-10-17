@@ -31,7 +31,7 @@ export default function EditorHome() {
         </Link>
       </div>
       <p style={{ fontSize: 13.5, color: "var(--dim)", marginBottom: 26 }}>
-        글을 클릭하면 편집 화면이 열려요. 저장은 파일 수정까지 — 커밋·푸시(발행)는 직접.
+        글을 누르면 편집 화면이 열려요. 출간하면 content/posts에 파일까지 저장되고, 블로그에 올리려면 커밋·푸시는 직접 해 주세요.
       </p>
 
       {posts.map((p) => (
