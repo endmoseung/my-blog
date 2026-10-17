@@ -62,8 +62,13 @@ export function isDirty(current: Draft, base: Draft): boolean {
 
 // 시작 값 고르기. 수정 모드에서는 원본이 그대로일 때만 초안을 믿는다 —
 // 그래야 VS Code·git pull로 파일을 고친 뒤 낡은 초안으로 덮어쓰는 일이 없다.
-export function pickStart(stored: StoredDraft | null, base: Draft, isEdit: boolean): { value: Draft; restored: boolean } {
-  if (!stored || !isDirty(stored.value, base)) return { value: base, restored: false };
-  if (isEdit && (!stored.base || isDirty(stored.base, base))) return { value: base, restored: false };
-  return { value: stored.value, restored: true };
+// 믿지 못한 초안은 stale로 돌려준다 — 조용히 버리지 않고 사용자가 골라 열 수 있게.
+export function pickStart(
+  stored: StoredDraft | null,
+  base: Draft,
+  isEdit: boolean,
+): { value: Draft; restored: boolean; stale: Draft | null } {
+  if (!stored || !isDirty(stored.value, base)) return { value: base, restored: false, stale: null };
+  if (isEdit && (!stored.base || isDirty(stored.base, base))) return { value: base, restored: false, stale: stored.value };
+  return { value: stored.value, restored: true, stale: null };
 }

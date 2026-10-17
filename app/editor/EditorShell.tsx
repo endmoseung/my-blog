@@ -64,6 +64,14 @@ function persistDraft(key: string, value: Draft, base: Draft) {
   }
 }
 
+function removeDraft(key: string) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    /* 무시 */
+  }
+}
+
 const now = () => new Date().toLocaleTimeString("ko-KR", { hour12: false });
 
 /* ── velog식 편집기 — 왼쪽 마크다운, 오른쪽 실제 글과 같은 미리보기 ── */
@@ -104,7 +112,13 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
     coverImage: start.value.coverImage,
     slug: start.value.slug,
   });
-  const [status, setStatus] = useState<string | null>(start.restored ? "임시저장본을 불러왔어요." : null);
+  const [status, setStatus] = useState<string | null>(
+    start.restored
+      ? "임시저장본을 불러왔어요."
+      : start.stale
+        ? "파일이 그사이 바뀌어서 예전 임시저장본 대신 파일 내용을 열었어요."
+        : null,
+  );
   const [modalOpen, setModalOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -133,14 +147,23 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
     setStatus(`임시저장 ${now()}`);
   };
 
+  // 쓰지 않은 예전 초안은 따로 보관한다 — 다음 자동 저장이 같은 키를 덮어도 「예전 임시저장본 열기」로 되찾게.
+  const staleKey = `${draftKey}:stale`;
+  useEffect(() => {
+    if (start.stale) persistDraft(staleKey, start.stale, start.base);
+  }, [staleKey, start.stale, start.base]);
+
   // 저장(출간)을 마치면 멈춘다 — 계속 돌면 지운 임시저장본을 다시 만들어,
   // 다음 「새 글」이 이미 출간한 글로 열린다.
   const saved = done !== null;
   useEffect(() => {
     if (saved) return;
     const id = setInterval(() => {
-      // 바뀐 게 없으면 남기지 않는다 — 원본 사본이 초안으로 쌓이지 않게
-      if (!isDirty(latest.current, start.base)) return;
+      // 원래 내용으로 돌아왔으면 초안을 지운다 — 남겨 두면 되돌린 수정이 다음에 다시 살아난다
+      if (!isDirty(latest.current, start.base)) {
+        removeDraft(draftKey);
+        return;
+      }
       persistDraft(draftKey, latest.current, start.base);
       setStatus(`자동 임시저장 ${now()}`);
     }, AUTOSAVE_MS);
@@ -204,11 +227,8 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
       setSaveError("error" in obj && typeof obj.error === "string" ? obj.error : "저장에 실패했어요.");
       return;
     }
-    try {
-      localStorage.removeItem(draftKey);
-    } catch {
-      /* 무시 */
-    }
+    removeDraft(draftKey);
+    removeDraft(staleKey);
     setModalOpen(false);
     setDone({
       slug: "slug" in obj && typeof obj.slug === "string" ? obj.slug : slug,
@@ -217,18 +237,22 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
   };
 
   const exit = () => {
-    // 나가도 쓰던 내용이 남도록 바뀐 게 있으면 임시저장부터
+    // 나가도 쓰던 내용이 남도록 바뀐 게 있으면 임시저장, 원래대로면 초안을 지운다
     if (isDirty(latest.current, start.base)) writeDraft();
+    else removeDraft(draftKey);
     window.location.href = "/editor";
   };
 
   // 복원한 초안을 버리고 파일(또는 빈 글)로 다시 연다.
   const discardDraft = () => {
-    try {
-      localStorage.removeItem(draftKey);
-    } catch {
-      /* 무시 */
-    }
+    removeDraft(draftKey);
+    window.location.reload();
+  };
+
+  // 보관해 둔 예전 초안을 지금 파일 기준 초안으로 바꿔 다시 연다.
+  const openStaleDraft = () => {
+    if (start.stale) persistDraft(draftKey, start.stale, start.base);
+    removeDraft(staleKey);
     window.location.reload();
   };
 
@@ -403,12 +427,27 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
         </button>
         <span className="ved-status" aria-live="polite">
           {status ?? "바뀐 내용은 20초마다 자동 임시저장해요"}
-          {start.restored && (
-            <button type="button" className="ved-link-btn" style={{ marginLeft: 10 }} onClick={discardDraft}>
-              {isEdit ? "파일 내용으로 되돌리기" : "비우고 새로 쓰기"}
-            </button>
-          )}
         </span>
+        {/* 상태 문구는 좁은 화면에서 숨지만, 이 버튼은 남긴다 */}
+        {start.restored && (
+          <button type="button" className="ved-link-btn ved-draft-action" onClick={discardDraft}>
+            {/* 좁은 화면에서는 앞말(ved-long)을 숨겨 짧게 보인다 */}
+            {isEdit ? (
+              <>
+                <span className="ved-long">파일 내용으로 </span>되돌리기
+              </>
+            ) : (
+              <>
+                <span className="ved-long">비우고 </span>새로 쓰기
+              </>
+            )}
+          </button>
+        )}
+        {start.stale && (
+          <button type="button" className="ved-link-btn ved-draft-action" onClick={openStaleDraft}>
+            <span className="ved-long">예전 </span>임시저장본 열기
+          </button>
+        )}
         <div style={{ display: "flex", gap: 8 }}>
           <button type="button" className="ved-btn-ghost" onClick={saveDraft}>
             임시저장

@@ -18,12 +18,12 @@ describe("parseDraft", () => {
 
 describe("pickStart", () => {
   it("초안이 없으면 원본으로 시작한다", () => {
-    expect(pickStart(null, base, true)).toEqual({ value: base, restored: false });
+    expect(pickStart(null, base, true)).toEqual({ value: base, restored: false, stale: null });
   });
 
   it("새 글은 초안이 있으면 복원한다", () => {
     const stored = { value: { ...base, title: "쓰던 글" }, base: null };
-    expect(pickStart(stored, { ...base, title: "", markdown: "" }, false)).toEqual({ value: stored.value, restored: true });
+    expect(pickStart(stored, { ...base, title: "", markdown: "" }, false)).toEqual({ value: stored.value, restored: true, stale: null });
   });
 
   it("수정 모드: 원본이 그대로이고 초안이 다르면 복원한다", () => {
@@ -31,14 +31,14 @@ describe("pickStart", () => {
     expect(pickStart(stored, base, true).restored).toBe(true);
   });
 
-  it("수정 모드: 초안을 남긴 뒤 파일이 바뀌었으면 초안을 버리고 파일을 연다", () => {
+  it("수정 모드: 초안을 남긴 뒤 파일이 바뀌었으면 파일을 열고, 초안은 stale로 돌려준다(조용히 버리지 않게)", () => {
     const stored = { value: { ...base, markdown: "고친 본문" }, base: { ...base, markdown: "옛 원본" } };
-    expect(pickStart(stored, base, true)).toEqual({ value: base, restored: false });
+    expect(pickStart(stored, base, true)).toEqual({ value: base, restored: false, stale: stored.value });
   });
 
   it("수정 모드: 원본 기록이 없는 예전 초안은 쓰지 않는다", () => {
     const stored = { value: { ...base, markdown: "tiptap이 다시 쓴 본문" }, base: null };
-    expect(pickStart(stored, base, true)).toEqual({ value: base, restored: false });
+    expect(pickStart(stored, base, true)).toEqual({ value: base, restored: false, stale: stored.value });
   });
 
   it("초안이 원본과 같으면 복원으로 치지 않는다 (키 순서가 달라도)", () => {
