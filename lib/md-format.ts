@@ -130,8 +130,13 @@ export function formatMarkdown(doc: string, from: number, to: number, kind: Form
   }
 }
 
-// 업로드한 이미지를 커서 자리에 넣는다. 문단 중간이면 새 줄로 뺀다.
-export function imageMarkdown(doc: string, pos: number, url: string): { from: number; to: number; insert: string } {
-  const atLineStart = pos === 0 || doc[pos - 1] === "\n";
-  return { from: pos, to: pos, insert: `${atLineStart ? "" : "\n"}![](${url})\n` };
+// 업로드한 이미지를 커서 자리에 독립 문단으로 넣는다. 앞뒤 글과는 빈 줄 하나로 떼어,
+// 한 줄 바꿈만 두었다가 이미지가 앞 문단 안에 붙는 일이 없게 한다.
+// cursor는 이미지 다음 문단의 시작 — 이어서 쓰거나 이미지를 하나 더 넣을 자리.
+export function imageMarkdown(doc: string, pos: number, url: string): { from: number; to: number; insert: string; cursor: number } {
+  const before = Math.min(runBefore(doc, pos, "\n"), 2);
+  const after = Math.min(runAfter(doc, pos, "\n"), 2);
+  const lead = pos === 0 ? "" : "\n".repeat(2 - before);
+  const insert = `${lead}![](${url})${"\n".repeat(2 - after)}`;
+  return { from: pos, to: pos, insert, cursor: pos + insert.length + after };
 }

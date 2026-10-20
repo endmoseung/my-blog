@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import matter from "gray-matter";
-import { makeSlug, makeFrontmatter, autoExcerpt, updateMdx, addTags, localDate } from "./editor";
+import { makeSlug, makeFrontmatter, autoExcerpt, updateMdx, addTags, localDate, planImageMoves, rewriteImageUrls } from "./editor";
 
 describe("makeSlug", () => {
   it("한글은 유지하고 공백은 하이픈으로", () => {
@@ -54,6 +54,12 @@ describe("addTags", () => {
   });
   it("이미 있는 태그와 빈 값은 넣지 않는다", () => {
     expect(addTags(["react"], "react,  ,회고")).toEqual(["react", "회고"]);
+  });
+  it("기존 글 태그와 대소문자만 다르면 기존 표기로 넣는다", () => {
+    expect(addTags([], "react, nextjs", ["React", "회고"])).toEqual(["React", "nextjs"]);
+  });
+  it("대소문자만 다른 태그는 한 번만 들어간다", () => {
+    expect(addTags(["React"], "REACT")).toEqual(["React"]);
   });
 });
 
@@ -111,5 +117,37 @@ source: "https://velog.io/@endmoseung/old"
     expect(matter(withCover).data.coverImage).toBe("/images/x.png");
     expect(matter(updateMdx(withCover, { ...changes, coverImage: "" }, "x")).data.coverImage).toBeUndefined();
     expect(matter(updateMdx(withCover, changes, "x")).data.coverImage).toBe("/images/x.png");
+  });
+});
+
+describe("planImageMoves / rewriteImageUrls", () => {
+  const owned = (dir: string) => dir === "기존-글";
+  const md = [
+    "![](/images/draft/1.png)",
+    "![](/images/새-글/2.png)",
+    "![](/images/기존-글/3.png)",
+    "![](https://cdn.example.com/images/a/4.png)",
+    '<img src="/images/옛-제목/5.png" />',
+    "![](/images/draft/1.png)",
+  ].join("\n\n");
+
+  it("다른 폴더에 올라간 이 글의 이미지만 최종 폴더로 옮긴다 (기존 글 폴더·바깥 주소·이미 맞는 폴더는 제외)", () => {
+    expect(planImageMoves([md, "/images/draft/cover.png"], "새-글", owned)).toEqual([
+      { from: "/images/draft/1.png", to: "/images/새-글/1.png" },
+      { from: "/images/옛-제목/5.png", to: "/images/새-글/5.png" },
+      { from: "/images/draft/cover.png", to: "/images/새-글/cover.png" },
+    ]);
+  });
+  it("경로를 벗어나는 폴더 이름은 옮기지 않는다", () => {
+    expect(planImageMoves(["![](/images/../x.png)"], "새-글", owned)).toEqual([]);
+  });
+  it("옮긴 이미지의 주소를 모두 바꾸고, 나머지는 그대로 둔다", () => {
+    const moves = planImageMoves([md], "새-글", owned);
+    const out = rewriteImageUrls(md, moves);
+    expect(out).not.toContain("/images/draft/");
+    expect(out).toContain("![](/images/새-글/1.png)");
+    expect(out).toContain('src="/images/새-글/5.png"');
+    expect(out).toContain("/images/기존-글/3.png");
+    expect(out).toContain("https://cdn.example.com/images/a/4.png");
   });
 });
