@@ -141,6 +141,8 @@ describe("planImageMoves / rewriteImageUrls", () => {
   it("경로를 벗어나는 폴더 이름·더 깊은 경로는 옮기지 않는다", () => {
     expect(planImageMoves(["![](/images/../x.png)"], "새-글", owned)).toEqual([]);
     expect(planImageMoves(["![](/images/a/b/c.png)"], "새-글", owned)).toEqual([]);
+    expect(planImageMoves(["![](/images/foo/bar/x.png)", "<img src=\"/images/foo/bar/x.png\" />"], "새-글", owned)).toEqual([]);
+    expect(planImageMoves(['![](/images/draft/1.png "제목")'], "새-글", owned)).toEqual([{ from: "/images/draft/1.png", to: "/images/새-글/1.png" }]);
   });
   it("옮긴 이미지의 주소를 모두 바꾸고, 나머지는 그대로 둔다", () => {
     const moves = planImageMoves([md], "새-글", owned);
