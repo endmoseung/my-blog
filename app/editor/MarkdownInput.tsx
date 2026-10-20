@@ -142,8 +142,8 @@ export default function MarkdownInput({ initialValue, apiRef, onChange, onScroll
         const head = view.state.selection.main.head;
         const e = imageMarkdown(view.state.doc.toString(), head, url);
         view.dispatch({
-          changes: e,
-          selection: { anchor: e.from + e.insert.length },
+          changes: { from: e.from, to: e.to, insert: e.insert },
+          selection: { anchor: e.cursor },
           scrollIntoView: true,
         });
         view.focus();

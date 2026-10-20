@@ -52,8 +52,9 @@ export function parseDraft(raw: string | null): StoredDraft | null {
 }
 
 // 키 순서와 무관하게 비교하려고 필드를 정해진 순서로 직렬화한다.
+// 본문 앞뒤 공백은 저장할 때 잘려 나가므로(app/editor/api/save) 비교에서도 뺀다.
 function signature(d: Draft): string {
-  return JSON.stringify([d.title, d.tags, d.markdown, d.excerpt, d.featured, d.coverImage, d.slug]);
+  return JSON.stringify([d.title, d.tags, d.markdown.trim(), d.excerpt, d.featured, d.coverImage, d.slug]);
 }
 
 export function isDirty(current: Draft, base: Draft): boolean {

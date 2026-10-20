@@ -52,4 +52,7 @@ describe("isDirty", () => {
     expect(isDirty({ ...base }, base)).toBe(false);
     expect(isDirty({ ...base, tags: ["react", "회고"] }, base)).toBe(true);
   });
+  it("본문 앞뒤 빈 줄만 다르면 바뀐 것으로 보지 않는다 (저장할 때 잘려 나가서)", () => {
+    expect(isDirty({ ...base, markdown: "\n" + base.markdown + "\n" }, base)).toBe(false);
+  });
 });

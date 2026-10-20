@@ -106,10 +106,26 @@ describe("formatMarkdown — 링크·코드 블록", () => {
 });
 
 describe("imageMarkdown", () => {
-  it("줄 중간이면 새 줄에 이미지를 넣는다", () => {
-    expect(imageMarkdown("글", 1, "/images/a/1.png")).toEqual({ from: 1, to: 1, insert: "\n![](/images/a/1.png)\n" });
+  const put = (doc: string, pos: number) => {
+    const e = imageMarkdown(doc, pos, "/x.png");
+    const next = doc.slice(0, e.from) + e.insert + doc.slice(e.to);
+    return { doc: next, cursorAt: next.slice(e.cursor) };
+  };
+
+  it("문단 끝에 넣으면 빈 줄로 떼어 독립 문단으로 넣는다 (앞 문단 안에 붙지 않게)", () => {
+    expect(put("앞 문단\n\n뒤 문단", 4)).toEqual({ doc: "앞 문단\n\n![](/x.png)\n\n뒤 문단", cursorAt: "뒤 문단" });
   });
-  it("줄 맨 앞이면 그 자리에 넣는다", () => {
-    expect(imageMarkdown("", 0, "/x.png").insert).toBe("![](/x.png)\n");
+  it("줄 중간이면 앞뒤를 빈 줄로 나눈다", () => {
+    expect(put("가나다", 1).doc).toBe("가\n\n![](/x.png)\n\n나다");
+  });
+  it("빈 문서·문서 끝이면 이미지 아래 새 문단에 커서를 둔다", () => {
+    expect(put("", 0)).toEqual({ doc: "![](/x.png)\n\n", cursorAt: "" });
+    expect(put("글", 1)).toEqual({ doc: "글\n\n![](/x.png)\n\n", cursorAt: "" });
+  });
+  it("이미 빈 줄이 있으면 더 넣지 않는다 — 이어서 넣어도 빈 줄 하나씩", () => {
+    const first = put("앞\n\n뒤", 3);
+    expect(first.doc).toBe("앞\n\n![](/x.png)\n\n뒤");
+    const pos = first.doc.length - first.cursorAt.length;
+    expect(put(first.doc, pos).doc).toBe("앞\n\n![](/x.png)\n\n![](/x.png)\n\n뒤");
   });
 });

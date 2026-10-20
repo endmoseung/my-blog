@@ -196,11 +196,13 @@ export default function EditorShell({ knownTags, initial }: { knownTags: string[
   };
 
   const commitTagInput = (raw: string) => {
-    setTags((prev) => addTags(prev, raw));
+    setTags((prev) => addTags(prev, raw, knownTags));
     setTagInput("");
   };
 
-  const suggestions = knownTags.filter((t) => !tags.includes(t) && t.toLowerCase().includes(tagInput.trim().toLowerCase())).slice(0, 8);
+  const suggestions = knownTags
+    .filter((t) => !tags.some((x) => x.toLowerCase() === t.toLowerCase()) && t.toLowerCase().includes(tagInput.trim().toLowerCase()))
+    .slice(0, 8);
 
   // 출간 창에서 고친 값을 부모에 남긴다. URL을 건드리지 않았으면 계속 제목을 따라가도록 비워 둔다.
   const keepFields = (fields: PublishFields) => setPublish({ ...fields, slug: fields.slug === slug ? publish.slug : fields.slug });

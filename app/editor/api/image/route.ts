@@ -19,7 +19,9 @@ export async function POST(req: Request) {
   }
 
   const slug = makeSlug(rawSlug) || "draft";
-  const ext = (file.type.split("/")[1] ?? "png").replace(/[^a-z0-9]/gi, "") || "png";
+  // image/svg+xml → svg (기호만 지우면 .svgxml이 된다)
+  const subtype = (file.type.split("/")[1] ?? "png").split("+")[0];
+  const ext = subtype.replace(/[^a-z0-9]/gi, "") || "png";
   const name = `${Date.now()}.${ext}`;
   const dir = path.join(process.cwd(), "public/images", slug);
   fs.mkdirSync(dir, { recursive: true });

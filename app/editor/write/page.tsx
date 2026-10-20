@@ -34,7 +34,8 @@ export default async function WritePage({ searchParams }: { searchParams: Promis
         excerpt: post.excerpt,
         featured: post.featured,
         coverImage: post.coverImage ?? "",
-        markdown: post.content,
+        // gray-matter가 남기는 앞 빈 줄을 뗀다. 저장할 때도 앞뒤를 자르니 파일 내용과 같다.
+        markdown: post.content.trim(),
         date: post.date,
       };
     } catch {
