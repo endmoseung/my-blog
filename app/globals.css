@@ -442,125 +442,338 @@ article h3 {
   overflow-wrap: anywhere;
 }
 
-/* 에디터(/editor, dev 전용) — WYSIWYG 본문이 실제 글과 같은 결로 보이게 */
-.editor-body {
-  outline: none;
-  min-height: 400px;
+/* 편집기(/editor/write, dev 전용) — velog식 좌우 분할. 사이트 머리·꼬리를 덮는 전체 화면 */
+.ved {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas: "write preview" "foot preview";
+  background: var(--bg);
+  color: var(--fg);
 }
-/* 전역 [tabindex]:focus-visible 아웃라인이 캔버스 전체에 걸리는 것 방지 */
-.editor-body:focus,
-.editor-body:focus-visible {
+.ved-tabs { display: none; }
+.ved-write {
+  grid-area: write;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.ved-head { padding: 32px 48px 0; }
+.ved-title {
+  display: block;
+  width: 100%;
+  field-sizing: content;
+  min-height: 1.3em;
+  resize: none;
+  border: 0;
   outline: none !important;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.3;
 }
-/* 에디터 코드블록 — 본문은 shiki가 글자색을 입히지만 에디터는 lowlight(hljs)라
-   토큰 색을 직접 준다. 기본 글자·커서는 밝게(어두운 블록 배경 위). */
-.editor-body pre,
-.editor-body pre code {
-  color: #e8e8e4;
-  caret-color: #e8e8e4;
+.ved-title::placeholder { color: var(--dim); opacity: 0.6; }
+.ved-divider {
+  width: 64px;
+  height: 6px;
+  margin: 22px 0 18px;
+  border-radius: 1px;
+  background: var(--fg);
+  opacity: 0.75;
 }
-/* hljs 토큰 — github-dark 계열 최소 세트 */
-.editor-body pre .hljs-keyword,
-.editor-body pre .hljs-selector-tag,
-.editor-body pre .hljs-meta { color: #ff7b72; }
-.editor-body pre .hljs-string,
-.editor-body pre .hljs-regexp,
-.editor-body pre .hljs-attr { color: #a5d6ff; }
-.editor-body pre .hljs-comment,
-.editor-body pre .hljs-quote { color: #8b949e; font-style: italic; }
-.editor-body pre .hljs-title,
-.editor-body pre .hljs-function .hljs-title { color: #d2a8ff; }
-.editor-body pre .hljs-number,
-.editor-body pre .hljs-literal,
-.editor-body pre .hljs-built_in { color: #79c0ff; }
-.editor-body pre .hljs-name,
-.editor-body pre .hljs-type,
-.editor-body pre .hljs-class .hljs-title { color: #7ee787; }
-.editor-body pre .hljs-variable,
-.editor-body pre .hljs-template-variable,
-.editor-body pre .hljs-property { color: #ffa657; }
-
-/* 툴바 언어 선택 (코드블록 안에서만 표시) */
-.ed-lang {
-  margin-left: auto;
-  height: 30px;
+.ved-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ved-tag {
+  height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--accent);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.ved-tag:hover { opacity: 0.6; text-decoration: line-through; }
+.ved-tag-input-wrap { position: relative; flex: 1; min-width: 140px; }
+.ved-tag-input {
+  width: 100%;
+  height: 32px;
+  border: 0;
+  outline: none !important;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 15px;
+}
+.ved-suggest {
+  position: absolute;
+  top: 36px;
+  left: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: min(420px, 100%);
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.2);
+}
+.ved-suggest button {
+  height: 28px;
   padding: 0 10px;
   border: 1px solid var(--line);
-  border-radius: 7px;
-  background: var(--soft);
+  border-radius: 999px;
+  background: transparent;
   color: var(--fg);
-  font-size: 12.5px;
-  font-weight: 600;
-  font-family: inherit;
+  font: inherit;
+  font-size: 13px;
   cursor: pointer;
 }
-.editor-body p.is-editor-empty:first-child::before {
-  content: "본문을 쓰세요…";
-  color: var(--dim);
-  float: left;
-  height: 0;
-  pointer-events: none;
-}
-
-/* 에디터 툴바 — 본문 위에 sticky */
-.ed-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
+.ved-suggest button:hover { border-color: var(--accent); color: var(--accent); }
+.ved-hint { margin-top: 8px; font-size: 12.5px; color: var(--dim); }
+.ved-toolbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 2px;
-  padding: 8px 6px;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
-  backdrop-filter: blur(8px);
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
+  padding: 18px 40px 10px;
 }
-.ed-btn {
-  min-width: 32px;
-  height: 30px;
+.ved-tool {
+  min-width: 40px;
+  height: 36px;
   padding: 0 8px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 6px;
   background: transparent;
   color: var(--dim);
-  font-size: 13px;
+  font: inherit;
+  font-size: 16px;
   font-weight: 700;
-  font-family: inherit;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: background 0.15s, color 0.15s;
 }
-.ed-btn:hover {
-  background: var(--soft);
-  color: var(--fg);
-}
-.ed-btn.on {
-  background: var(--fg);
-  color: var(--bg);
-}
-.ed-sep {
-  width: 1px;
-  height: 18px;
-  background: var(--line);
-  margin: 0 6px;
-}
-
-/* 에디터 하단 고정 바 */
-.ed-bottom {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 30;
+.ved-tool sub { font-size: 0.6em; }
+.ved-tool:hover { background: var(--soft); color: var(--fg); }
+.ved-sep { width: 1px; height: 18px; margin: 0 8px; background: var(--line); }
+.ved-input { flex: 1; min-height: 0; }
+.ved-input .cm-editor { height: 100%; }
+.ved-input .cm-scroller { padding: 0 48px; }
+.ved-foot {
+  grid-area: foot;
   display: flex;
   align-items: center;
-  gap: 16px;
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 14px 24px;
-  background: color-mix(in srgb, var(--bg) 92%, transparent);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid var(--line);
+  gap: 12px;
+  /* border-box라 safe-area 여백만큼 높이를 더해 줘야 버튼 자리가 줄지 않는다 */
+  min-height: calc(64px + env(safe-area-inset-bottom, 0px));
+  padding: 0 16px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.08);
+  background: var(--bg);
+}
+.ved-exit {
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.ved-exit:hover { background: var(--soft); }
+.ved-status {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+.ved-btn-ghost,
+.ved-btn-primary {
+  height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, background 0.15s;
+}
+.ved-btn-ghost { background: var(--soft); color: var(--fg); }
+.ved-btn-ghost:hover { background: var(--line); }
+.ved-btn-primary { background: var(--accent); color: #fff; }
+.ved-btn-primary:hover { opacity: 0.88; }
+.ved-btn-primary:disabled,
+.ved-btn-ghost:disabled { opacity: 0.4; cursor: default; }
+.ved-preview {
+  grid-area: preview;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 48px clamp(24px, 4vw, 64px) 30vh;
+  border-left: 1px solid var(--line);
+  background: color-mix(in srgb, var(--soft) 55%, var(--bg));
+}
+.ved-article { max-width: 720px; overflow-wrap: anywhere; }
+.ved-error {
+  margin: 0 0 24px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, #e03131 40%, transparent);
+  background: color-mix(in srgb, #e03131 8%, var(--bg));
+  color: var(--fg);
+  font-size: 12.5px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* 출간 창 */
+.ved-modal-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  backdrop-filter: blur(4px);
+}
+.ved-modal {
+  width: min(760px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg);
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.35);
+  outline: none;
+}
+.ved-modal-h { font-size: 1.25rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 20px; }
+.ved-modal-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; }
+.ved-label { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+.ved-thumb {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--dim);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.ved-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.ved-link-btn {
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--dim);
+  font: inherit;
+  font-size: 12.5px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ved-draft-action { margin: 0; white-space: nowrap; }
+.ved-foot button { white-space: nowrap; flex-shrink: 0; }
+.ved-field {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+}
+.ved-count { text-align: right; font-size: 12px; color: var(--dim); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.ved-url {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+.ved-url span { color: var(--dim); }
+.ved-url input {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  border: 0;
+  outline: none !important;
+  background: transparent;
+  color: var(--fg);
+  font: inherit;
+}
+.ved-url input:disabled { color: var(--dim); }
+.ved-check { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.ved-warn { margin-top: 10px; font-size: 13px; color: #e03131; }
+.ved-modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 28px; }
+.ved-done { grid-template: minmax(0, 1fr) / minmax(0, 1fr); grid-template-areas: none; place-items: center; padding: 24px; }
+
+/* 좁은 화면 — 한 단으로 쌓고 작성/미리보기를 탭으로 전환 */
+@media (max-width: 767px) {
+  .ved {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: "tabs" "main" "foot";
+  }
+  .ved-tabs {
+    grid-area: tabs;
+    display: flex;
+    border-bottom: 1px solid var(--line);
+  }
+  .ved-tabs button {
+    flex: 1;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    color: var(--dim);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .ved-tabs button[aria-selected="true"] { color: var(--fg); box-shadow: inset 0 -2px 0 var(--fg); }
+  .ved-write,
+  .ved-preview { grid-area: main; }
+  .ved[data-tab="write"] .ved-preview,
+  .ved[data-tab="preview"] .ved-write { display: none; }
+  .ved-preview { border-left: 0; padding: 28px 16px 30vh; }
+  .ved-head { padding: 20px 16px 0; }
+  .ved-toolbar { padding: 12px 8px 6px; }
+  .ved-tool { min-width: 34px; }
+  .ved-input .cm-scroller { padding: 0 16px; }
+  .ved-status { display: none; }
+  .ved-foot { gap: 8px; }
+  .ved-long { display: none; }
+  .ved-exit { padding: 0 6px; }
+  .ved-btn-ghost,
+  .ved-btn-primary { padding: 0 14px; }
+  .ved-modal-grid { grid-template-columns: minmax(0, 1fr); gap: 8px; }
 }
 
 /* ── 모바일 (≤640px) ───────────────────────────────────────────── */

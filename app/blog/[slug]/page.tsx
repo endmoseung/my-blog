@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import { MDXRemote } from "next-mdx-remote/rsc";
-import rehypePrettyCode from "rehype-pretty-code";
-import rehypeSlug from "rehype-slug";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAllPosts, getPostBySlug } from "@/lib/posts";
 import { mdxComponents } from "@/components/mdx/MDXComponents";
+import { blogMdxOptions } from "@/lib/mdx-options";
 import { jsonLdHtml } from "@/lib/json-ld";
 import {
   SITE_URL,
@@ -124,7 +123,9 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   const postUrl = makePostUrl(slug);
   const publishedISO = post.date ? new Date(post.date).toISOString() : undefined;
   const modifiedISO = post.updatedDate ? new Date(post.updatedDate).toISOString() : publishedISO;
-  const structuredImage = post.coverImage ?? postOgImageUrl(slug);
+  // 편집기는 coverImage를 /images/... 상대 경로로 쓴다 — 구조화 데이터에는 절대 URL이 필요하다
+  // (og:image는 metadataBase가 절대 경로로 바꿔 주지만 JSON-LD는 그대로 나간다).
+  const structuredImage = post.coverImage ? new URL(post.coverImage, SITE_URL).href : postOgImageUrl(slug);
 
   // BlogPosting — Google이 글·작성자·날짜를 리치 결과로 이해. 날짜는 반드시 ISO 8601.
   const blogPostingLd = {
@@ -197,12 +198,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
         <MDXRemote
           source={post.content}
           components={mdxComponents}
-          options={{
-            mdxOptions: {
-              // defaultLang: 언어 없는 ```블록도 shiki가 plaintext로 색을 입히게 (없으면 스킵돼 무색)
-              rehypePlugins: [rehypeSlug, [rehypePrettyCode, { theme: "github-dark", defaultLang: "plaintext" }]],
-            },
-          }}
+          options={{ mdxOptions: blogMdxOptions }}
         />
       </div>
 

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { NextResponse } from "next/server";
-import { makeSlug, makeFrontmatter, updateMdx, type DraftMeta } from "@/lib/editor";
+import { makeSlug, makeFrontmatter, updateMdx, localDate, type DraftMeta } from "@/lib/editor";
 
 const POSTS_DIR = path.join(process.cwd(), "content/posts");
 
@@ -10,7 +10,7 @@ function badSlug(slug: string) {
 }
 
 // 로컬 전용 저장 API — 프로덕션에선 존재 자체를 숨긴다(404).
-// create: 새 글(중복 409) / update: 기존 글 덮어쓰기(slug 고정, 미지 frontmatter 키 보존).
+// create: 새 글(중복 409, slug는 출간 창에서 고친 값 → 없으면 제목) / update: 기존 글 덮어쓰기(slug 고정, 미지 frontmatter 키 보존).
 export async function POST(req: Request) {
   if (process.env.NODE_ENV !== "development") {
     return new NextResponse(null, { status: 404 });
@@ -43,7 +43,9 @@ export async function POST(req: Request) {
         excerpt: meta.excerpt,
         tags: meta.tags,
         featured: meta.featured,
-        updatedDate: new Date().toISOString().slice(0, 10),
+        updatedDate: localDate(),
+        // 출간 창에서 대표 이미지를 뺐으면 빈 문자열 → frontmatter에서도 지운다.
+        coverImage: meta.coverImage ?? "",
       },
       markdown,
     );
@@ -51,7 +53,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ slug, path: `content/posts/${slug}.mdx` });
   }
 
-  const slug = makeSlug(meta.title);
+  const slug = makeSlug(targetSlug?.trim() || meta.title);
   // makeSlug가 경로 구분자를 이미 제거하지만, 파일 쓰기 직전 이중 안전벨트.
   if (badSlug(slug)) {
     return NextResponse.json({ error: "slug를 만들 수 없는 제목이에요." }, { status: 400 });

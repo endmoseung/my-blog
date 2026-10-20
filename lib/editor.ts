@@ -7,6 +7,7 @@ export type DraftMeta = {
   excerpt: string;
   tags: string[];
   featured: boolean;
+  coverImage?: string;
 };
 
 // 제목 → 파일명 slug. 한글 유지(기존 65편 컨벤션), 공백→하이픈, 특수문자 제거.
@@ -29,9 +30,26 @@ export function makeFrontmatter(meta: DraftMeta): string {
     `excerpt: ${JSON.stringify(meta.excerpt)}`,
     `tags: [${meta.tags.map((t) => JSON.stringify(t)).join(", ")}]`,
     `featured: ${meta.featured}`,
+    ...(meta.coverImage ? [`coverImage: ${JSON.stringify(meta.coverImage)}`] : []),
     "---",
   ];
   return lines.join("\n") + "\n";
+}
+
+// 오늘 날짜(YYYY-MM-DD). toISOString()은 UTC라 KST 00:00~08:59에 쓰면 전날로 찍힌다.
+export function localDate(d: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+// 태그 입력값 → 태그 목록. velog처럼 쉼표로 여러 개를 한 번에 넣을 수 있다.
+export function addTags(existing: string[], raw: string): string[] {
+  const next = [...existing];
+  for (const part of raw.split(",")) {
+    const tag = part.trim().replace(/^#+/, "").trim();
+    if (tag && !next.includes(tag)) next.push(tag);
+  }
+  return next;
 }
 
 // 본문 첫 실문단에서 마크다운 기호를 걷어낸 150자 발췌.
@@ -55,9 +73,10 @@ export function autoExcerpt(markdown: string): string {
 
 // 기존 글 수정 — 미지 frontmatter 키(source 등)를 보존하며 변경분만 병합해
 // 완성 mdx 문자열을 돌려준다. date는 원본 유지, updatedDate만 갱신.
+// coverImage: 값이 있으면 쓰고, 빈 문자열이면 지우고, 생략하면 원본 그대로.
 export function updateMdx(
   originalRaw: string,
-  changes: { title: string; excerpt: string; tags: string[]; featured: boolean; updatedDate: string },
+  changes: { title: string; excerpt: string; tags: string[]; featured: boolean; updatedDate: string; coverImage?: string },
   markdown: string,
 ): string {
   const { data } = matter(originalRaw);
@@ -69,6 +88,10 @@ export function updateMdx(
     tags: changes.tags,
     featured: changes.featured,
   };
+  if (changes.coverImage !== undefined) {
+    if (changes.coverImage) merged.coverImage = changes.coverImage;
+    else delete merged.coverImage;
+  }
 
   // 표준 키를 고정 순서로 먼저, 그 외 키는 원본 등장 순서대로 뒤에.
   const canonical = ["title", "date", "updatedDate", "excerpt", "tags", "featured"];

@@ -1,440 +1,505 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Image from "@tiptap/extension-image";
-import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
-import { createLowlight, common } from "lowlight";
-import { Markdown } from "tiptap-markdown";
-import { makeSlug, autoExcerpt, type DraftMeta } from "@/lib/editor";
+import { useEffect, useRef, useState } from "react";
+import { makeSlug, autoExcerpt, addTags, localDate, type DraftMeta } from "@/lib/editor";
+import { parseDraft, pickStart, isDirty, type Draft } from "@/lib/editor-draft";
+import type { FormatKind } from "@/lib/md-format";
+import MarkdownInput, { type MarkdownInputApi } from "./MarkdownInput";
+import Preview from "./Preview";
+import PublishModal, { EXCERPT_MAX, type PublishFields } from "./PublishModal";
 
 const AUTOSAVE_MS = 20_000;
 
-// 에디터 안 실시간 하이라이팅(lowlight=highlight.js). 블로그 본문은 shiki가 따로 칠하므로
-// 여기 언어 목록은 편집 편의용 — 저장되는 마크다운엔 ```lang 만 남는다.
-const lowlight = createLowlight(common);
-const CODE_LANGS = [
-  "", "ts", "tsx", "js", "jsx", "json", "bash", "css", "html", "python", "sql", "yaml", "kotlin", "java", "markdown",
-];
-
-type Draft = { title: string; tags: string[]; excerpt: string; featured: boolean; markdown: string };
 export type EditorInitial = {
   slug: string;
   title: string;
   tags: string[];
   excerpt: string;
   featured: boolean;
+  coverImage: string;
   markdown: string;
   date: string;
 };
 
-/* ── 툴바 ─────────────────────────────────────────────── */
-function Toolbar({ editor, onImagePick }: { editor: Editor | null; onImagePick: () => void }) {
-  // 선택 위치가 바뀔 때마다 active 상태를 다시 그린다 (이벤트 구독 — effect 내 동기 setState 아님)
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    if (!editor) return;
-    const bump = () => setTick((t) => t + 1);
-    editor.on("transaction", bump);
-    editor.on("selectionUpdate", bump);
-    return () => {
-      editor.off("transaction", bump);
-      editor.off("selectionUpdate", bump);
-    };
-  }, [editor]);
+// 임시저장 키(editor_draft_v1)는 예전 편집기와 같게 둔다 — 새 글 초안은 예전 형식도 그대로 읽힌다.
+// 수정 모드에서 어떤 초안을 믿는지는 lib/editor-draft.ts의 pickStart가 정한다.
 
-  if (!editor) return null;
-  const c = editor.chain().focus();
+const TOOLBAR: Array<{ kind: FormatKind; label: React.ReactNode; title: string } | "|" | "image"> = [
+  { kind: "h1", label: <>H<sub>1</sub></>, title: "제목 1" },
+  { kind: "h2", label: <>H<sub>2</sub></>, title: "제목 2" },
+  { kind: "h3", label: <>H<sub>3</sub></>, title: "제목 3" },
+  { kind: "h4", label: <>H<sub>4</sub></>, title: "제목 4" },
+  "|",
+  { kind: "bold", label: <b>B</b>, title: "굵게 (⌘B)" },
+  { kind: "italic", label: <i>I</i>, title: "기울임 (⌘I)" },
+  { kind: "strike", label: <s>S</s>, title: "취소선 (⌘⇧X)" },
+  "|",
+  { kind: "quote", label: "❝", title: "인용" },
+  { kind: "link", label: "🔗", title: "링크 (⌘K)" },
+  "image",
+  { kind: "code", label: "`", title: "인라인 코드 (⌘E)" },
+  { kind: "codeblock", label: "</>", title: "코드 블록" },
+];
 
-  const items: Array<{ label: string; title: string; on: boolean; run: () => void } | "|"> = [
-    { label: "H2", title: "큰 제목", on: editor.isActive("heading", { level: 2 }), run: () => c.toggleHeading({ level: 2 }).run() },
-    { label: "H3", title: "작은 제목", on: editor.isActive("heading", { level: 3 }), run: () => c.toggleHeading({ level: 3 }).run() },
-    "|",
-    { label: "B", title: "굵게 (⌘B)", on: editor.isActive("bold"), run: () => c.toggleBold().run() },
-    { label: "I", title: "기울임 (⌘I)", on: editor.isActive("italic"), run: () => c.toggleItalic().run() },
-    { label: "S̶", title: "취소선", on: editor.isActive("strike"), run: () => c.toggleStrike().run() },
-    "|",
-    { label: "❝", title: "인용", on: editor.isActive("blockquote"), run: () => c.toggleBlockquote().run() },
-    { label: "‹›", title: "인라인 코드", on: editor.isActive("code"), run: () => c.toggleCode().run() },
-    { label: "{ }", title: "코드 블록", on: editor.isActive("codeBlock"), run: () => c.toggleCodeBlock().run() },
-    "|",
-    { label: "•", title: "목록", on: editor.isActive("bulletList"), run: () => c.toggleBulletList().run() },
-    { label: "1.", title: "번호 목록", on: editor.isActive("orderedList"), run: () => c.toggleOrderedList().run() },
-    "|",
-    {
-      label: "🔗",
-      title: "링크",
-      on: editor.isActive("link"),
-      run: () => {
-        if (editor.isActive("link")) {
-          c.unsetLink().run();
-          return;
-        }
-        const url = window.prompt("링크 URL");
-        if (url) c.setLink({ href: url }).run();
-      },
-    },
-    { label: "🖼", title: "이미지 업로드", on: false, run: onImagePick },
-    { label: "―", title: "구분선", on: false, run: () => c.setHorizontalRule().run() },
-  ];
-
-  const inCodeBlock = editor.isActive("codeBlock");
-  const codeLang = (editor.getAttributes("codeBlock").language as string | null) ?? "";
-
-  return (
-    <div className="ed-toolbar" role="toolbar" aria-label="서식">
-      {items.map((it, i) =>
-        it === "|" ? (
-          <span key={i} className="ed-sep" aria-hidden />
-        ) : (
-          <button key={i} type="button" title={it.title} className={`ed-btn${it.on ? " on" : ""}`} onMouseDown={(e) => e.preventDefault()} onClick={it.run}>
-            {it.label}
-          </button>
-        ),
-      )}
-      {/* 코드블록 안에 커서가 있을 때만 — 언어 선택 */}
-      {inCodeBlock && (
-        <select
-          className="ed-lang"
-          aria-label="코드 언어"
-          value={CODE_LANGS.includes(codeLang) ? codeLang : ""}
-          onChange={(e) => editor.chain().focus().updateAttributes("codeBlock", { language: e.target.value || null }).run()}
-        >
-          {CODE_LANGS.map((l) => (
-            <option key={l} value={l}>
-              {l === "" ? "언어 선택" : l}
-            </option>
-          ))}
-        </select>
-      )}
-    </div>
-  );
+// 이미지 업로드 — 붙여넣기·끌어다 놓기·툴바·대표 이미지 공용. public/images/<slug>/ 에 저장된다.
+async function uploadImage(file: File, slug: string): Promise<string | null> {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("slug", slug || "draft");
+  try {
+    const res = await fetch("/editor/api/image", { method: "POST", body: fd });
+    if (!res.ok) return null;
+    const data: unknown = await res.json();
+    return typeof data === "object" && data !== null && "url" in data && typeof data.url === "string" ? data.url : null;
+  } catch {
+    // dev 서버가 재시작 중이면 fetch가 reject된다 — 실패로 돌려 호출한 쪽이 상태를 풀게 한다.
+    return null;
+  }
 }
 
-/* ── 에디터 본체 ───────────────────────────────────────── */
+function persistDraft(key: string, value: Draft, base: Draft) {
+  try {
+    localStorage.setItem(key, JSON.stringify({ value, base }));
+  } catch {
+    /* 저장소가 가득 찼거나 막힘 — 파일 저장에는 영향 없음 */
+  }
+}
+
+function removeDraft(key: string) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    /* 무시 */
+  }
+}
+
+const now = () => new Date().toLocaleTimeString("ko-KR", { hour12: false });
+
+/* ── velog식 편집기 — 왼쪽 마크다운, 오른쪽 실제 글과 같은 미리보기 ── */
+// 브라우저 전용으로만 그려진다(EditorLoader가 ssr:false로 불러옴) → useState 초기화에서 localStorage를 읽어도 된다.
 export default function EditorShell({ knownTags, initial }: { knownTags: string[]; initial?: EditorInitial }) {
   const isEdit = !!initial;
   const draftKey = isEdit ? `editor_draft_v1:${initial.slug}` : "editor_draft_v1";
 
-  const [title, setTitle] = useState(initial?.title ?? "");
-  const [tags, setTags] = useState<string[]>(initial?.tags ?? []);
-  const [tagInput, setTagInput] = useState("");
-  const [excerpt, setExcerpt] = useState(initial?.excerpt ?? "");
-  const [excerptTouched, setExcerptTouched] = useState(isEdit && !!initial?.excerpt);
-  const [featured, setFeatured] = useState(initial?.featured ?? false);
-  const [status, setStatus] = useState<string | null>(null);
-  const [autosavedAt, setAutosavedAt] = useState<string | null>(null);
-  const [savedPath, setSavedPath] = useState<string | null>(null);
-
-  const slug = isEdit ? initial.slug : makeSlug(title);
-  // 렌더 중 ref 쓰기는 금지(react-hooks/refs) — effect에서 동기화
-  const slugRef = useRef("");
-  useEffect(() => {
-    slugRef.current = slug;
-  }, [slug]);
-
-  // 이미지 업로드 — 붙여넣기/드롭/툴바 공용
-  const uploadImage = useCallback(async (file: File): Promise<string | null> => {
-    const fd = new FormData();
-    fd.append("file", file);
-    fd.append("slug", slugRef.current || "draft");
-    const res = await fetch("/editor/api/image", { method: "POST", body: fd });
-    if (!res.ok) return null;
-    const { url } = (await res.json()) as { url: string };
-    return url;
-  }, []);
-
-  const insertImages = useCallback(
-    (editor: Editor, files: File[]) => {
-      for (const f of files) {
-        uploadImage(f).then((url) => {
-          if (url) editor.chain().focus().setImage({ src: url }).run();
-          else setStatus("이미지 업로드에 실패했어요.");
-        });
-      }
-    },
-    [uploadImage],
-  );
-
-  const editor = useEditor({
-    immediatelyRender: false,
-    // 콘텐츠 주입·초안 복원은 effect가 아니라 에디터 생성 이벤트에서 — setState-in-effect 규칙 회피
-    onCreate({ editor }) {
-      if (isEdit) {
-        editor.commands.setContent(initial.markdown);
-        return;
-      }
-      const raw = localStorage.getItem(draftKey);
-      if (!raw) return;
+  // 시작 값: 믿을 수 있는 임시저장본이 있으면 그것, 없으면 원본(수정) 또는 빈 글(새 글)
+  const [start] = useState(() => {
+    const base: Draft = {
+      title: initial?.title ?? "",
+      tags: initial?.tags ?? [],
+      markdown: initial?.markdown ?? "",
+      excerpt: initial?.excerpt ?? "",
+      featured: initial?.featured ?? false,
+      coverImage: initial?.coverImage ?? "",
+      slug: initial?.slug ?? "",
+    };
+    let raw: string | null = null;
+    try {
+      raw = localStorage.getItem(draftKey);
+    } catch {
+      /* 저장소를 못 쓰는 브라우저 — 초안 없이 시작 */
+    }
+    const picked = pickStart(parseDraft(raw), base, isEdit);
+    // 지난번에 보관해 둔 예전 초안도 이어서 알린다(출간하거나 열 때까지).
+    let stale = picked.stale;
+    if (isEdit && !stale) {
       try {
-        const d = JSON.parse(raw) as Draft;
-        if (d.title || d.markdown) {
-          setTitle(d.title);
-          setTags(d.tags ?? []);
-          if (d.excerpt) {
-            setExcerpt(d.excerpt);
-            setExcerptTouched(true);
-          }
-          setFeatured(d.featured ?? false);
-          editor.commands.setContent(d.markdown ?? "");
-          setStatus("임시저장본을 복원했어요.");
-        }
+        const backup = parseDraft(localStorage.getItem(`${draftKey}:stale`))?.value ?? null;
+        if (backup && isDirty(backup, base)) stale = backup;
       } catch {
-        /* 깨진 초안은 무시 */
+        /* 무시 */
       }
-    },
-    extensions: [
-      // StarterKit v3에 Link 포함 — 별도 등록하면 duplicate 경고.
-      // codeBlock은 lowlight 버전으로 교체(에디터 안 실시간 하이라이팅).
-      StarterKit.configure({ link: { openOnClick: false }, codeBlock: false }),
-      CodeBlockLowlight.configure({ lowlight }),
-      Image,
-      Markdown.configure({ html: false, transformPastedText: true }),
-    ],
-    editorProps: {
-      attributes: { class: "prose editor-body", "aria-label": "본문" },
-      handlePaste: (view, event) => {
-        const files = [...(event.clipboardData?.files ?? [])].filter((f) => f.type.startsWith("image/"));
-        if (files.length === 0) return false;
-        event.preventDefault();
-        if (editor) insertImages(editor, files);
-        return true;
-      },
-      handleDrop: (view, event) => {
-        const files = [...(event.dataTransfer?.files ?? [])].filter((f) => f.type.startsWith("image/"));
-        if (files.length === 0) return false;
-        event.preventDefault();
-        if (editor) insertImages(editor, files);
-        return true;
-      },
-    },
+    }
+    return { ...picked, stale, base };
   });
 
-  // 툴바 이미지 버튼용 숨김 파일 입력
+  const [title, setTitle] = useState(start.value.title);
+  const [tags, setTags] = useState(start.value.tags);
+  const [tagInput, setTagInput] = useState("");
+  const [tagFocus, setTagFocus] = useState(false);
+  const [markdown, setMarkdown] = useState(start.value.markdown);
+  // slug는 새 글에서 출간 창으로 직접 고쳤을 때만 채워진다(빈 값이면 제목을 따라감).
+  const [publish, setPublish] = useState<PublishFields>({
+    excerpt: start.value.excerpt,
+    featured: start.value.featured,
+    coverImage: start.value.coverImage,
+    slug: start.value.slug,
+  });
+  const [status, setStatus] = useState<string | null>(
+    start.restored
+      ? "임시저장본을 불러왔어요."
+      : start.stale
+        ? "파일이 그사이 바뀌어서 예전 임시저장본 대신 파일 내용을 열었어요."
+        : null,
+  );
+  const [modalOpen, setModalOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [done, setDone] = useState<{ slug: string; path: string } | null>(null);
+  const [tab, setTab] = useState<"write" | "preview">("write");
+  const [mdxError, setMdxError] = useState<string | null>(null);
+
+  const inputApi = useRef<MarkdownInputApi | null>(null);
+  const previewPane = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  // editor 인스턴스는 ref로 고정해 getMarkdown을 안정 함수로 만든다
-  // (React Compiler가 editor 의존 useCallback의 메모를 보존하지 못함).
-  const editorRef = useRef<Editor | null>(null);
-  useEffect(() => {
-    editorRef.current = editor;
-  }, [editor]);
+  // 새 글은 출간 창에서 URL을 직접 고치기 전까지 제목을 따라간다.
+  const slug = isEdit ? initial.slug : publish.slug || makeSlug(title);
 
-  // tiptap-markdown이 editor.storage에 markdown을 심지만 타입 선언은 없다 —
-  // 구조적 타입으로 좁혀 접근(§type-safety: as any 금지).
-  // 수동 useCallback 금지 — React Compiler가 메모를 자동 처리(수동 메모는 보존 실패 에러).
-  function getMarkdown() {
-    const storage = editorRef.current?.storage as { markdown?: { getMarkdown(): string } } | undefined;
-    return storage?.markdown?.getMarkdown() ?? "";
-  }
+  // 임시저장에 쓸 최신 값 — 타이머가 타이핑마다 다시 걸리지 않게 ref로 읽는다.
+  const latest = useRef<Draft>(start.value);
+  useEffect(() => {
+    latest.current = { title, tags, markdown, ...publish };
+  }, [title, tags, markdown, publish]);
 
-  // 임시저장(localStorage) — 20초마다. 메타는 ref로, 본문은 저장 시점에 에디터에서 직접 읽어
-  // 타이핑마다 타이머가 리셋되지 않게 한다.
-  const metaRef = useRef({ title: "", tags: [] as string[], excerpt: "", featured: false });
+  // 초안은 {value, base}로 저장한다. base(이 초안을 시작할 때의 원본)가 있어야 다음에 열 때
+  // 그사이 파일이 바뀌었는지 알 수 있다.
+  const writeDraft = () => persistDraft(draftKey, latest.current, start.base);
+  const saveDraft = () => {
+    writeDraft();
+    setStatus(`임시저장 ${now()}`);
+  };
+
+  // 쓰지 않은 예전 초안은 따로 보관한다 — 다음 자동 저장이 같은 키를 덮거나 지워도 「예전 임시저장본 열기」로 되찾게.
+  // 수정 모드에서만 생긴다(새 글 키 editor_draft_v1:stale이 slug가 stale인 글의 키와 겹치지 않게 새 글엔 안 씀).
+  const staleKey = `${draftKey}:stale`;
   useEffect(() => {
-    metaRef.current = { title, tags, excerpt, featured };
-  }, [title, tags, excerpt, featured]);
+    if (start.stale) persistDraft(staleKey, start.stale, start.base);
+  }, [staleKey, start.stale, start.base]);
+
+  // 저장(출간)을 마치면 멈춘다 — 계속 돌면 지운 임시저장본을 다시 만들어,
+  // 다음 「새 글」이 이미 출간한 글로 열린다.
+  const saved = done !== null;
   useEffect(() => {
+    if (saved) return;
     const id = setInterval(() => {
-      const storage = editorRef.current?.storage as { markdown?: { getMarkdown(): string } } | undefined;
-      const draft: Draft = { ...metaRef.current, markdown: storage?.markdown?.getMarkdown() ?? "" };
-      localStorage.setItem(draftKey, JSON.stringify(draft));
-      setAutosavedAt(new Date().toLocaleTimeString("ko-KR", { hour12: false }));
+      // 원래 내용으로 돌아왔으면 초안을 지운다 — 남겨 두면 되돌린 수정이 다음에 다시 살아난다
+      if (!isDirty(latest.current, start.base)) {
+        removeDraft(draftKey);
+        return;
+      }
+      persistDraft(draftKey, latest.current, start.base);
+      setStatus(`자동 임시저장 ${now()}`);
     }, AUTOSAVE_MS);
     return () => clearInterval(id);
-  }, [draftKey]);
+  }, [draftKey, saved, start.base]);
 
-  const addTag = (t: string) => {
-    const clean = t.trim();
-    if (clean && !tags.includes(clean)) setTags([...tags, clean]);
+  const insertImages = async (files: File[]) => {
+    setStatus("이미지 올리는 중…");
+    for (const f of files) {
+      const url = await uploadImage(f, slug);
+      if (url) inputApi.current?.insertImage(url);
+      else {
+        setStatus("이미지 업로드에 실패했어요.");
+        return;
+      }
+    }
+    setStatus("이미지를 넣었어요.");
+  };
+
+  const commitTagInput = (raw: string) => {
+    setTags((prev) => addTags(prev, raw));
     setTagInput("");
   };
 
-  const save = async () => {
-    const markdown = getMarkdown();
+  const suggestions = knownTags.filter((t) => !tags.includes(t) && t.toLowerCase().includes(tagInput.trim().toLowerCase())).slice(0, 8);
+
+  // 출간 창에서 고친 값을 부모에 남긴다. URL을 건드리지 않았으면 계속 제목을 따라가도록 비워 둔다.
+  const keepFields = (fields: PublishFields) => setPublish({ ...fields, slug: fields.slug === slug ? publish.slug : fields.slug });
+
+  const doPublish = async (fields: PublishFields) => {
+    keepFields(fields);
+    setSaving(true);
+    setSaveError(null);
     const meta: DraftMeta = {
       title: title.trim(),
-      date: initial?.date ?? new Date().toISOString().slice(0, 10),
-      excerpt: excerptTouched && excerpt.trim() ? excerpt.trim() : autoExcerpt(markdown),
+      date: initial?.date ?? localDate(),
+      excerpt: fields.excerpt.trim() || autoExcerpt(markdown),
       tags,
-      featured,
+      featured: fields.featured,
+      coverImage: fields.coverImage,
     };
-    setStatus("저장 중…");
-    const res = await fetch("/editor/api/save", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(isEdit ? { mode: "update", slug: initial.slug, meta, markdown } : { mode: "create", meta, markdown }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setStatus(data.error ?? "저장에 실패했어요.");
+    let res: Response;
+    try {
+      res = await fetch("/editor/api/save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(
+          isEdit ? { mode: "update", slug: initial.slug, meta, markdown } : { mode: "create", slug: fields.slug, meta, markdown },
+        ),
+      });
+    } catch {
+      // 네트워크 실패에서도 출간 창이 잠기지 않게 저장 중 상태를 푼다.
+      setSaving(false);
+      setSaveError("저장 요청을 보내지 못했어요. dev 서버가 켜져 있는지 확인해 주세요.");
       return;
     }
-    localStorage.removeItem(draftKey);
-    if (isEdit) {
-      setStatus(`저장 완료 · ${new Date().toLocaleTimeString("ko-KR", { hour12: false })}`);
-    } else {
-      setSavedPath(data.path);
-      setStatus(null);
+    const data: unknown = await res.json().catch(() => null);
+    setSaving(false);
+    const obj = typeof data === "object" && data !== null ? data : {};
+    if (!res.ok) {
+      setSaveError("error" in obj && typeof obj.error === "string" ? obj.error : "저장에 실패했어요.");
+      return;
     }
+    removeDraft(draftKey);
+    if (isEdit) removeDraft(staleKey);
+    setModalOpen(false);
+    setDone({
+      slug: "slug" in obj && typeof obj.slug === "string" ? obj.slug : slug,
+      path: "path" in obj && typeof obj.path === "string" ? obj.path : "",
+    });
   };
 
-  /* 새 글 저장 완료 화면 */
-  if (savedPath) {
+  const exit = () => {
+    // 나가도 쓰던 내용이 남도록 바뀐 게 있으면 임시저장, 원래대로면 초안을 지운다
+    if (isDirty(latest.current, start.base)) writeDraft();
+    else removeDraft(draftKey);
+    window.location.href = "/editor";
+  };
+
+  // 복원한 초안을 버리고 파일(또는 빈 글)로 다시 연다.
+  const discardDraft = () => {
+    removeDraft(draftKey);
+    window.location.reload();
+  };
+
+  // 보관해 둔 예전 초안을 지금 파일 기준 초안으로 바꿔 다시 연다.
+  const openStaleDraft = () => {
+    if (start.stale) persistDraft(draftKey, start.stale, start.base);
+    removeDraft(staleKey);
+    window.location.reload();
+  };
+
+  /* 출간 완료 화면 */
+  if (done) {
     return (
-      <div style={{ padding: "60px 0" }}>
-        <h1 style={{ fontWeight: 800, fontSize: "1.6rem", letterSpacing: "-0.02em" }}>저장 완료 ✓</h1>
-        <p style={{ color: "var(--dim)", marginTop: 12, fontSize: 14.5 }}>
-          <code>{savedPath}</code> 에 저장됐어요. 커밋·푸시는 직접 해주세요.
-        </p>
-        <p style={{ marginTop: 24, display: "flex", gap: 18 }}>
-          <a href={`/blog/${encodeURIComponent(slug)}`} className="u" style={{ fontWeight: 650, fontSize: 14.5 }}>
-            글 보러 가기 →
-          </a>
-          <a href={`/editor/write?slug=${encodeURIComponent(slug)}`} className="u" style={{ fontWeight: 650, fontSize: 14.5, color: "var(--dim)" }}>
-            계속 수정하기
-          </a>
-          <a href="/editor" className="u" style={{ fontWeight: 650, fontSize: 14.5, color: "var(--dim)" }}>
-            목록으로
-          </a>
-        </p>
+      <div className="ved ved-done">
+        <div>
+          <h1 style={{ fontWeight: 800, fontSize: "1.7rem", letterSpacing: "-0.02em" }}>{isEdit ? "수정했어요 ✓" : "출간했어요 ✓"}</h1>
+          <p style={{ color: "var(--dim)", marginTop: 12, fontSize: 14.5 }}>
+            <code>{done.path}</code> 에 저장했어요. 블로그에 올리려면 커밋하고 푸시해 주세요.
+          </p>
+          <p style={{ marginTop: 24, display: "flex", gap: 18, flexWrap: "wrap" }}>
+            <a href={`/blog/${encodeURIComponent(done.slug)}`} className="u" style={{ fontWeight: 650 }}>
+              글 보러 가기 →
+            </a>
+            <a href={`/editor/write?slug=${encodeURIComponent(done.slug)}`} className="u" style={{ fontWeight: 650, color: "var(--dim)" }}>
+              계속 수정하기
+            </a>
+            <a href="/editor" className="u" style={{ fontWeight: 650, color: "var(--dim)" }}>
+              목록으로
+            </a>
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ paddingBottom: 96 }}>
-      {/* 제목 */}
-      <input
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        placeholder="제목을 입력하세요"
-        aria-label="제목"
-        style={{
-          width: "100%",
-          fontSize: "clamp(1.6rem, 4vw, 2.1rem)",
-          fontWeight: 800,
-          letterSpacing: "-0.03em",
-          border: "none",
-          outline: "none",
-          background: "transparent",
-          color: "var(--fg)",
-          fontFamily: "inherit",
-          marginTop: 10,
-        }}
-      />
-      <p style={{ fontSize: 12, color: "var(--dim)", margin: "8px 0 14px", fontVariantNumeric: "tabular-nums" }}>
-        content/posts/{slug || "…"}.mdx
-        {isEdit ? ` · 최초 ${initial.date} (slug은 URL 보존을 위해 고정)` : ` · ${new Date().toISOString().slice(0, 10)}`}
-      </p>
-
-      {/* 태그 */}
-      <div className="flex flex-wrap gap-2" style={{ marginBottom: 10 }}>
-        {tags.map((t) => (
-          <button key={t} className="tag on" onClick={() => setTags(tags.filter((x) => x !== t))} title="빼기">
-            {t} ×
-          </button>
-        ))}
-        {knownTags
-          .filter((t) => !tags.includes(t))
-          .slice(0, 10)
-          .map((t) => (
-            <button key={t} className="tag" onClick={() => addTag(t)}>
-              {t}
-            </button>
-          ))}
-        <input
-          value={tagInput}
-          onChange={(e) => setTagInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              addTag(tagInput);
-            }
-          }}
-          placeholder="+ 새 태그"
-          aria-label="새 태그"
-          style={{ border: "none", outline: "none", background: "transparent", color: "var(--fg)", fontSize: 12.5, width: 90, fontFamily: "inherit" }}
-        />
-      </div>
-
-      {/* featured */}
-      <label style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--dim)", marginBottom: 14, cursor: "pointer" }}>
-        <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} />
-        featured — 홈 최상단에 노출
-      </label>
-
-      {/* 툴바 + 본문 — WYSIWYG 자체가 미리보기(실제 본문과 같은 .prose 스타일) */}
-      <Toolbar editor={editor} onImagePick={() => fileInput.current?.click()} />
-      <input
-        ref={fileInput}
-        type="file"
-        accept="image/*"
-        multiple
-        hidden
-        onChange={(e) => {
-          const files = [...(e.target.files ?? [])];
-          if (editor && files.length) insertImages(editor, files);
-          e.target.value = "";
-        }}
-      />
-      <div style={{ minHeight: 420, cursor: "text", paddingTop: 4 }} onClick={() => editor?.chain().focus().run()}>
-        <EditorContent editor={editor} />
-      </div>
-      <p style={{ fontSize: 12, color: "var(--dim)", marginTop: 6 }}>
-        마크다운 단축키 OK: <code># 제목</code> <code>**굵게**</code> <code>- 리스트</code> <code>&gt; 인용</code> <code>```코드</code> · 이미지는
-        붙여넣기(⌘V)·드래그·툴바 🖼
-      </p>
-
-      {/* excerpt */}
-      <textarea
-        value={excerptTouched ? excerpt : ""}
-        onChange={(e) => {
-          setExcerpt(e.target.value);
-          setExcerptTouched(true);
-        }}
-        placeholder="발췌(excerpt) — 비워두면 첫 문단에서 자동 생성"
-        aria-label="발췌"
-        rows={2}
-        style={{
-          width: "100%",
-          marginTop: 26,
-          padding: "12px 14px",
-          borderRadius: 10,
-          border: "1px solid var(--line)",
-          background: "var(--soft)",
-          color: "var(--fg)",
-          fontSize: ".9rem",
-          fontFamily: "inherit",
-          resize: "vertical",
-        }}
-      />
-
-      {/* 하단 고정 바 */}
-      <div className="ed-bottom">
-        <a href="/editor" className="u" style={{ fontSize: 13.5, color: "var(--dim)" }}>
-          ← 목록
-        </a>
-        <span style={{ fontSize: 12.5, color: "var(--dim)", flex: 1, textAlign: "center" }}>
-          {status ?? (autosavedAt ? `임시저장 ${autosavedAt}` : "20초마다 자동 임시저장")}
-        </span>
-        <button
-          onClick={save}
-          disabled={!title.trim()}
-          style={{
-            padding: "9px 22px",
-            borderRadius: 999,
-            border: 0,
-            background: title.trim() ? "var(--fg)" : "var(--line)",
-            color: "var(--bg)",
-            fontWeight: 700,
-            fontSize: ".92rem",
-            cursor: title.trim() ? "pointer" : "default",
-          }}
-        >
-          {isEdit ? "수정 저장" : "파일로 저장"}
+    <div
+      className="ved"
+      data-tab={tab}
+      onKeyDown={(e) => {
+        // ⌘S / Ctrl+S — 어느 입력칸에 있든 브라우저 「페이지 저장」 대신 임시저장
+        if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+          e.preventDefault();
+          saveDraft();
+        }
+      }}
+    >
+      {/* 좁은 화면 전용 — 작성/미리보기 전환 */}
+      <div className="ved-tabs" role="tablist" aria-label="보기 전환">
+        <button role="tab" aria-selected={tab === "write"} onClick={() => setTab("write")}>
+          작성
+        </button>
+        <button role="tab" aria-selected={tab === "preview"} onClick={() => setTab("preview")}>
+          미리보기
         </button>
       </div>
+
+      <section className="ved-write">
+        <div className="ved-head">
+          <textarea
+            className="ved-title"
+            value={title}
+            rows={1}
+            placeholder="제목을 입력하세요"
+            aria-label="제목"
+            onChange={(e) => setTitle(e.target.value.replace(/\n/g, " "))}
+            onKeyDown={(e) => {
+              // 한글 조합 중 Enter는 글자 확정용 — 그때 본문으로 넘기면 남은 Enter가 본문에 줄바꿈을 넣는다
+              if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                inputApi.current?.focus();
+              }
+            }}
+          />
+          <div className="ved-divider" aria-hidden />
+          <div className="ved-tags">
+            {tags.map((t) => (
+              <button key={t} type="button" className="ved-tag" title="눌러서 빼기" onClick={() => setTags(tags.filter((x) => x !== t))}>
+                {t}
+              </button>
+            ))}
+            <div className="ved-tag-input-wrap">
+              <input
+                className="ved-tag-input"
+                value={tagInput}
+                placeholder={tags.length ? "" : "태그를 입력하세요"}
+                aria-label="태그 입력"
+                onFocus={() => setTagFocus(true)}
+                onBlur={() => {
+                  setTagFocus(false);
+                  if (tagInput.trim()) commitTagInput(tagInput);
+                }}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v.includes(",")) commitTagInput(v);
+                  else setTagInput(v);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    commitTagInput(tagInput);
+                  } else if (e.key === "Backspace" && !tagInput && tags.length) {
+                    setTags(tags.slice(0, -1));
+                  }
+                }}
+              />
+              {tagFocus && suggestions.length > 0 && (
+                <div className="ved-suggest" role="listbox" aria-label="기존 태그">
+                  {suggestions.map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      role="option"
+                      aria-selected={false}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => commitTagInput(t)}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+          {tagFocus && <p className="ved-hint">Enter나 쉼표로 태그를 넣고, Backspace로 지워요.</p>}
+        </div>
+
+        <div className="ved-toolbar" role="toolbar" aria-label="서식">
+          {TOOLBAR.map((it, i) =>
+            it === "|" ? (
+              <span key={i} className="ved-sep" aria-hidden />
+            ) : it === "image" ? (
+              <button key={i} type="button" className="ved-tool" title="이미지 올리기" onClick={() => fileInput.current?.click()}>
+                🖼
+              </button>
+            ) : (
+              <button
+                key={i}
+                type="button"
+                className="ved-tool"
+                title={it.title}
+                aria-label={it.title}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => inputApi.current?.format(it.kind)}
+              >
+                {it.label}
+              </button>
+            ),
+          )}
+          <input
+            ref={fileInput}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(e) => {
+              const files = [...(e.target.files ?? [])];
+              if (files.length) insertImages(files);
+              e.target.value = "";
+            }}
+          />
+        </div>
+
+        <MarkdownInput
+          initialValue={start.value.markdown}
+          apiRef={inputApi}
+          onChange={setMarkdown}
+          onImageFiles={insertImages}
+          onScrollRatio={(r) => {
+            const el = previewPane.current;
+            if (el) el.scrollTop = r * (el.scrollHeight - el.clientHeight);
+          }}
+        />
+      </section>
+
+      <footer className="ved-foot">
+        <button type="button" className="ved-exit" onClick={exit}>
+          ← 나가기
+        </button>
+        <span className="ved-status" aria-live="polite">
+          {status ?? "바뀐 내용은 20초마다 자동 임시저장해요"}
+        </span>
+        {/* 상태 문구는 좁은 화면에서 숨지만, 이 버튼은 남긴다 */}
+        {start.restored && (
+          <button type="button" className="ved-link-btn ved-draft-action" onClick={discardDraft}>
+            {/* 좁은 화면에서는 앞말(ved-long)을 숨겨 짧게 보인다 */}
+            {isEdit ? (
+              <>
+                <span className="ved-long">파일 내용으로 </span>되돌리기
+              </>
+            ) : (
+              <>
+                <span className="ved-long">비우고 </span>새로 쓰기
+              </>
+            )}
+          </button>
+        )}
+        {/* 이번에 고치기 시작했으면 숨긴다 — 누르면 지금 수정을 예전 초안으로 덮어쓰게 되므로 */}
+        {start.stale && !isDirty({ title, tags, markdown, ...publish }, start.base) && (
+          <button type="button" className="ved-link-btn ved-draft-action" onClick={openStaleDraft}>
+            <span className="ved-long">예전 </span>임시저장본 열기
+          </button>
+        )}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button type="button" className="ved-btn-ghost" onClick={saveDraft}>
+            임시저장
+          </button>
+          <button
+            type="button"
+            className="ved-btn-primary"
+            disabled={!title.trim()}
+            title={title.trim() ? undefined : "제목을 먼저 입력하세요"}
+            onClick={() => {
+              setSaveError(null);
+              setModalOpen(true);
+            }}
+          >
+            {isEdit ? "수정하기" : "출간하기"}
+          </button>
+        </div>
+      </footer>
+
+      <div className="ved-preview" ref={previewPane}>
+        <Preview title={title} tags={tags} markdown={markdown} onErrorChange={setMdxError} />
+      </div>
+
+      {modalOpen && (
+        <PublishModal
+          isEdit={isEdit}
+          initial={{ ...publish, slug }}
+          autoExcerpt={autoExcerpt(markdown).slice(0, EXCERPT_MAX)}
+          busy={saving}
+          error={saveError}
+          mdxError={mdxError}
+          onUploadCover={(file) => uploadImage(file, slug)}
+          onCancel={(fields) => {
+            keepFields(fields);
+            setModalOpen(false);
+          }}
+          onPublish={doPublish}
+        />
+      )}
     </div>
   );
 }

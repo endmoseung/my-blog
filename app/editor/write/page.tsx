@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getAllPosts, getPostBySlug } from "@/lib/posts";
-import EditorShell, { type EditorInitial } from "../EditorShell";
+import type { EditorInitial } from "../EditorShell";
+import EditorLoader from "./EditorLoader";
 
 export const metadata = { title: "글쓰기 (로컬)", robots: { index: false, follow: false } };
 
@@ -32,6 +33,7 @@ export default async function WritePage({ searchParams }: { searchParams: Promis
         tags: post.tags,
         excerpt: post.excerpt,
         featured: post.featured,
+        coverImage: post.coverImage ?? "",
         markdown: post.content,
         date: post.date,
       };
@@ -40,5 +42,5 @@ export default async function WritePage({ searchParams }: { searchParams: Promis
     }
   }
 
-  return <EditorShell knownTags={knownTags} initial={initial} />;
+  return <EditorLoader knownTags={knownTags} initial={initial} />;
 }
