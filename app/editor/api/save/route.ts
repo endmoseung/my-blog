@@ -7,20 +7,44 @@ const POSTS_DIR = path.join(process.cwd(), "content/posts");
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 
 // 이미지 파일을 옮기고, 실제로 옮긴 것만 돌려준다(파일이 없거나 받을 자리에 이미 있으면 건너뜀).
+// 도중에 실패하면 그때까지 옮긴 것을 되돌린 뒤 오류를 낸다 — 편집기 본문의 옛 주소가 계속 맞게.
 function moveImages(moves: ImageMove[]): ImageMove[] {
   const done: ImageMove[] = [];
-  for (const m of moves) {
-    const src = path.join(PUBLIC_DIR, m.from);
-    const dst = path.join(PUBLIC_DIR, m.to);
-    if (!fs.existsSync(src) || fs.existsSync(dst)) continue;
-    fs.mkdirSync(path.dirname(dst), { recursive: true });
-    fs.renameSync(src, dst);
-    done.push(m);
-    // 옮기고 나서 빈 폴더(draft 등)는 지운다
-    const left = path.dirname(src);
-    if (fs.readdirSync(left).length === 0) fs.rmdirSync(left);
+  try {
+    for (const m of moves) {
+      const src = path.join(PUBLIC_DIR, m.from);
+      const dst = path.join(PUBLIC_DIR, m.to);
+      if (!fs.existsSync(src) || fs.existsSync(dst)) continue;
+      fs.mkdirSync(path.dirname(dst), { recursive: true });
+      fs.renameSync(src, dst);
+      done.push(m);
+    }
+  } catch (e) {
+    undoMoves(done);
+    throw e;
   }
+  // 다 옮긴 뒤 비게 된 폴더(draft 등)는 지운다
+  for (const m of done) removeIfEmpty(path.dirname(path.join(PUBLIC_DIR, m.from)));
   return done;
+}
+
+function undoMoves(done: ImageMove[]) {
+  for (const m of [...done].reverse()) {
+    try {
+      fs.mkdirSync(path.dirname(path.join(PUBLIC_DIR, m.from)), { recursive: true });
+      fs.renameSync(path.join(PUBLIC_DIR, m.to), path.join(PUBLIC_DIR, m.from));
+    } catch {
+      /* 되돌리기마저 실패하면 남은 것만이라도 되돌린다 */
+    }
+  }
+}
+
+function removeIfEmpty(dir: string) {
+  try {
+    if (fs.existsSync(dir) && fs.readdirSync(dir).length === 0) fs.rmdirSync(dir);
+  } catch {
+    /* 폴더 정리는 실패해도 글 저장에는 영향 없음 */
+  }
 }
 
 function badSlug(slug: string) {
@@ -88,7 +112,7 @@ export async function POST(req: Request) {
     fs.writeFileSync(file, makeFrontmatter(finalMeta) + "\n" + rewriteImageUrls(markdown, moved).trim() + "\n", "utf8");
   } catch (e) {
     // 글을 못 썼으면 이미지도 원래 자리로 돌려, 편집기 본문의 주소가 계속 맞게 한다.
-    moveImages(moved.map((m) => ({ from: m.to, to: m.from })));
+    undoMoves(moved);
     throw e;
   }
   return NextResponse.json({ slug, path: `content/posts/${slug}.mdx` });

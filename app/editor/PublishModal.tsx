@@ -13,7 +13,7 @@ type Props = {
   autoExcerpt: string;
   busy: boolean;
   error: string | null;
-  // 미리보기 변환 오류 — 저장을 막지는 않고 경고만 한다(미리보기가 마지막 입력을 아직 못 따라왔을 수 있어서).
+  // 미리보기 변환·그리기 오류 — 저장을 막지는 않고 경고만 한다(미리보기가 마지막 입력을 아직 못 따라왔을 수 있어서).
   mdxError: string | null;
   onUploadCover(file: File): Promise<string | null>;
   // 취소해도 창에서 고친 값(올린 대표 이미지 등)은 부모가 이어받는다.
@@ -160,7 +160,7 @@ export default function PublishModal({ isEdit, initial, autoExcerpt, busy, error
               featured — 홈 맨 위에 크게 보여요
             </label>
 
-            {mdxError && <p className="ved-warn">본문에 MDX 변환 오류가 있어요. 이대로 저장하면 글 화면이 깨지니 미리보기의 오류를 먼저 확인하세요.</p>}
+            {mdxError && <p className="ved-warn">미리보기에서 본문을 그리지 못했어요. 이대로 저장하면 글 화면이 깨지니 미리보기의 오류를 먼저 확인하세요.</p>}
             {error && (
               <p className="ved-warn" role="alert">
                 {error}

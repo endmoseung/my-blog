@@ -4,9 +4,7 @@ import * as runtime from "react/jsx-runtime";
 import * as devRuntime from "react/jsx-dev-runtime";
 import type { MDXRemoteSerializeResult } from "next-mdx-remote";
 import { mdxComponents } from "@/components/mdx/MDXComponents";
-
-// 한글 조합처럼 몰아서 오는 변경을 한 요청으로 묶는 짧은 틈. 길게 잡으면 그만큼 미리보기가 늦다.
-const SETTLE_MS = 30;
+import { createCompileQueue } from "@/lib/preview-queue";
 
 type PreviewResponse = { compiled: MDXRemoteSerializeResult } | { error: string };
 
@@ -17,49 +15,16 @@ function isPreviewResponse(v: unknown): v is PreviewResponse {
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
-// 변환 요청 줄 세우기 — 요청은 한 번에 하나만 보내고, 그사이 바뀐 내용은 가장 최신 것 하나만 이어서 보낸다.
-// 키마다 기다림을 새로 거는 디바운스는 타이핑하는 내내 미리보기를 멈춰 세웠다.
-function createCompileQueue(onResult: (r: PreviewResponse) => void) {
-  let latest: string | null = null;
-  let busy = false;
-  let disposed = false;
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const ctrl = new AbortController();
-
-  const run = async () => {
-    timer = undefined;
-    if (busy || latest === null) return;
-    const markdown = latest;
-    latest = null;
-    busy = true;
-    try {
-      const res = await fetch("/editor/api/preview", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ markdown }),
-        signal: ctrl.signal,
-      });
-      const data: unknown = await res.json();
-      if (!disposed && isPreviewResponse(data)) onResult(data);
-    } catch (e) {
-      if (!disposed) onResult({ error: message(e) });
-    } finally {
-      busy = false;
-      if (!disposed && latest !== null) run();
-    }
-  };
-
-  return {
-    request(markdown: string) {
-      latest = markdown;
-      if (!busy && timer === undefined) timer = setTimeout(run, SETTLE_MS);
-    },
-    dispose() {
-      disposed = true;
-      clearTimeout(timer);
-      ctrl.abort();
-    },
-  };
+async function compile(markdown: string, signal: AbortSignal): Promise<PreviewResponse> {
+  const res = await fetch("/editor/api/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ markdown }),
+    signal,
+  });
+  const data: unknown = await res.json();
+  if (!isPreviewResponse(data)) throw new Error(`미리보기 응답을 읽지 못했어요 (HTTP ${res.status}).`);
+  return data;
 }
 
 type MdxContent = (props: Record<string, never>) => ReactNode;
@@ -113,7 +78,7 @@ export default function Preview({ title, tags, markdown, onErrorChange }: Props)
   // 변환 오류는 직전에 성공한 화면 위에 띄우고, 그리기 오류는 본문 자리에 띄운다. 둘 다 출간 창에서도 경고한다.
   const [compileError, setCompileError] = useState<string | null>(null);
   const [renderError, setRenderError] = useState<string | null>(null);
-  const queue = useRef<ReturnType<typeof createCompileQueue> | null>(null);
+  const queue = useRef<ReturnType<typeof createCompileQueue<PreviewResponse>> | null>(null);
 
   // 출간 창에서도 오류를 경고하도록 부모에 알린다. 최신 콜백은 ref로 읽는다.
   const notify = useRef(onErrorChange);
@@ -126,22 +91,26 @@ export default function Preview({ title, tags, markdown, onErrorChange }: Props)
   }, [shownError]);
 
   useEffect(() => {
-    const q = createCompileQueue((data) => {
-      if ("error" in data) {
-        setCompileError(data.error);
-        return;
-      }
-      let next: MdxContent;
-      try {
-        next = hydrate(data.compiled.compiledSource);
-      } catch (e) {
-        setCompileError(message(e));
-        return;
-      }
-      // 함수를 상태로 넣으려면 「이전 값 → 새 값」 형태로 감싸야 한다.
-      setContent(() => next);
-      setCompileError(null);
-      setRenderError(null);
+    const q = createCompileQueue({
+      send: compile,
+      onError: (e) => setCompileError(message(e)),
+      onResult: (data) => {
+        if ("error" in data) {
+          setCompileError(data.error);
+          return;
+        }
+        let next: MdxContent;
+        try {
+          next = hydrate(data.compiled.compiledSource);
+        } catch (e) {
+          setCompileError(message(e));
+          return;
+        }
+        // 함수를 상태로 넣으려면 「이전 값 → 새 값」 형태로 감싸야 한다.
+        setContent(() => next);
+        setCompileError(null);
+        setRenderError(null);
+      },
     });
     queue.current = q;
     return () => {
